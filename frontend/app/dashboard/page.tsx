@@ -131,6 +131,12 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="flex gap-4 mb-8">
+        <Link href="/calendar">
+          <Button variant="outline">
+            <Calendar className="w-4 h-4 mr-2" />
+            Calendar View
+          </Button>
+        </Link>
         <Link href="/map">
           <Button variant="outline">
             <Map className="w-4 h-4 mr-2" />

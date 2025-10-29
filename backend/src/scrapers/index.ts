@@ -7,6 +7,10 @@ import { scrapeKudyZnudy } from './kudyznudy';
 import { scrapeVyletyZabava } from './vylety-zabava';
 import { scrapeOverenoRodici } from './overenorodici';
 import { scrapeKdykde } from './kdykde';
+import { scrapePraguest } from './praguest';
+import { scrapeEntentyky } from './ententyky';
+import { scrapeSlevomat } from './slevomat';
+import { scrapeSkvelecesko } from './skvelecesko';
 import { RawEvent, ScraperResult } from '../types';
 
 // Placeholder scrapers for remaining sources
@@ -29,10 +33,10 @@ export const SCRAPERS = [
   { name: 'kdykde.cz', fn: scrapeKdykde }, // Static HTML - no Firecrawl needed
   { name: 'kudyznudy.cz', fn: scrapeKudyZnudy }, // Requires Firecrawl
   { name: 'overenorodici.cz', fn: scrapeOverenoRodici }, // Requires Firecrawl
-  { name: 'praguest.com', fn: () => scrapePlaceholder('praguest.com') },
-  { name: 'ententyky.cz', fn: () => scrapePlaceholder('ententyky.cz') },
-  { name: 'slevomat.cz', fn: () => scrapePlaceholder('slevomat.cz') },
-  { name: 'skvelecesko.cz', fn: () => scrapePlaceholder('skvelecesko.cz') },
+  { name: 'praguest.com', fn: scrapePraguest }, // Requires Firecrawl
+  { name: 'ententyky.cz', fn: scrapeEntentyky }, // Requires Firecrawl
+  { name: 'slevomat.cz', fn: scrapeSlevomat }, // Requires Firecrawl - deals for kids
+  { name: 'skvelecesko.cz', fn: scrapeSkvelecesko }, // Requires Firecrawl
   { name: 'prahahrave.cz', fn: () => scrapePlaceholder('prahahrave.cz') },
   { name: 'aktivnidite.cz', fn: () => scrapePlaceholder('aktivnidite.cz') },
 ];

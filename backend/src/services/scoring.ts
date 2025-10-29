@@ -9,43 +9,63 @@ import { WeatherData } from '../types';
 const BASE_SCORE = 50;
 
 /**
- * Calculate age appropriateness score (max 20 points)
+ * Calculate age appropriateness score (max 25 points)
+ * Enhanced version with better age range handling
  * @param ageMin Minimum age for event
  * @param ageMax Maximum age for event
  * @param targetAge Target age to score for
- * @returns Score between 0 and 20
+ * @param ageGroup The age group being scored for
+ * @returns Score between 0 and 25
  */
-function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number): number {
+function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number, ageGroup?: AgeGroup): number {
   if (!ageMin && !ageMax) {
-    // No age restriction specified, assume suitable for all
-    return 15;
+    // No age restriction specified - give different scores based on age group
+    if (ageGroup === AgeGroup.TODDLER) return 18; // Most toddler events don't specify age
+    if (ageGroup === AgeGroup.CHILD) return 20; // Most kids events are broadly suitable
+    return 22; // Family events are usually all-ages
   }
 
   if (!targetAge) {
-    return 10;
+    return 12;
   }
 
   // Perfect match: targetAge is within range
   if (ageMin && ageMax && targetAge >= ageMin && targetAge <= ageMax) {
-    return 20;
+    return 25;
   }
 
   // Within range but not specified both bounds
   if (ageMin && !ageMax && targetAge >= ageMin) {
-    return 15;
+    // Event says "X+ years", check how close we are
+    const diff = targetAge - ageMin;
+    if (diff < 2) return 23;
+    if (diff < 5) return 20;
+    return 16;
   }
 
   if (ageMax && !ageMin && targetAge <= ageMax) {
-    return 15;
+    // Event says "up to X years", check how close we are
+    const diff = ageMax - targetAge;
+    if (diff > 2) return 23;
+    if (diff >= 0) return 20;
+    return 16;
   }
 
-  // Close to the range (within 2 years)
-  if (ageMin && Math.abs(targetAge - ageMin) <= 2) {
-    return 10;
+  // Close to the range - use graduated scoring
+  if (ageMin && targetAge < ageMin) {
+    const diff = ageMin - targetAge;
+    if (diff <= 1) return 15;
+    if (diff <= 2) return 10;
+    if (diff <= 4) return 5;
+    return 0;
   }
 
-  if (ageMax && Math.abs(targetAge - ageMax) <= 2) {
-    return 10;
+  if (ageMax && targetAge > ageMax) {
+    const diff = targetAge - ageMax;
+    if (diff <= 1) return 15;
+    if (diff <= 2) return 10;
+    if (diff <= 4) return 5;
+    return 0;
   }
 
   return 0;
@@ -131,15 +151,43 @@ function calculateEventTypeScore(
 
   // Age-specific preferences
   if (ageGroup === AgeGroup.TODDLER) {
+    // Toddlers (0-3 years): simple, safe activities
     if (cat.includes('playground') || cat.includes('soft play') || cat.includes('puppet')) {
+      score += 9;
+    }
+    if (cat.includes('petting zoo') || cat.includes('farm') || cat.includes('animals')) {
       score += 8;
     }
-  } else if (ageGroup === AgeGroup.CHILD) {
-    if (cat.includes('museum') || cat.includes('science') || cat.includes('sport')) {
+    if (cat.includes('music') || cat.includes('sensory')) {
       score += 7;
     }
+    // Avoid complex/long activities for toddlers
+    if (cat.includes('theater') && !cat.includes('puppet')) {
+      score -= 2;
+    }
+  } else if (ageGroup === AgeGroup.CHILD) {
+    // Children (4-12 years): educational, interactive, active
+    if (cat.includes('museum') || cat.includes('science') || cat.includes('educational')) {
+      score += 8;
+    }
+    if (cat.includes('sport') || cat.includes('climbing') || cat.includes('adventure')) {
+      score += 7;
+    }
+    if (cat.includes('workshop') || cat.includes('craft') || cat.includes('art')) {
+      score += 7;
+    }
+    if (cat.includes('theater') || cat.includes('cinema')) {
+      score += 6;
+    }
   } else if (ageGroup === AgeGroup.FAMILY) {
+    // Family: everyone can enjoy
     if (cat.includes('festival') || cat.includes('zoo') || cat.includes('park')) {
+      score += 7;
+    }
+    if (cat.includes('exhibition') || cat.includes('museum')) {
+      score += 6;
+    }
+    if (cat.includes('outdoor') || cat.includes('nature') || cat.includes('hiking')) {
       score += 6;
     }
   }
@@ -277,9 +325,9 @@ export function scoreEvent(
   weather?: WeatherData
 ): { score: number; factors: ScoreFactors } {
   const targetAge =
-    ageGroup === AgeGroup.TODDLER ? 1.5 : ageGroup === AgeGroup.CHILD ? 9 : undefined;
+    ageGroup === AgeGroup.TODDLER ? 2 : ageGroup === AgeGroup.CHILD ? 8 : undefined;
 
-  const ageScore = calculateAgeScore(event.ageMin, event.ageMax, targetAge);
+  const ageScore = calculateAgeScore(event.ageMin, event.ageMax, targetAge, ageGroup);
   const distanceScore = calculateDistanceScore(event.distanceFromPrague);
   const priceScore = calculatePriceScore(event.adultPrice, event.childPrice, event.familyPrice);
   const eventTypeScore = calculateEventTypeScore(
