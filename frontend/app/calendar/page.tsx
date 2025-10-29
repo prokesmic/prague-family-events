@@ -26,7 +26,18 @@ export default function CalendarPage() {
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const data = await eventAPI.getEvents({ view, limit: 1000 });
+
+      // Get events for the next 3 months
+      const today = new Date();
+      const threeMonthsFromNow = new Date();
+      threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+      const data = await eventAPI.getEvents({
+        view,
+        limit: 1000,
+        dateFrom: today.toISOString(),
+        dateTo: threeMonthsFromNow.toISOString()
+      });
       setEvents(data.events || []);
     } catch (error) {
       console.error('Failed to load events:', error);
