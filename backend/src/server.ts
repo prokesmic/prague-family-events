@@ -7,6 +7,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import eventsRouter from './routes/events';
+import adminRouter from './routes/admin';
 import { scheduleDailyScrape } from './cron/daily-scrape';
 
 // Load environment variables
@@ -45,6 +46,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API routes
 app.use('/api/events', eventsRouter);
+app.use('/api/admin', adminRouter);
 
 // Stats endpoint
 app.get('/api/stats', async (req: Request, res: Response) => {

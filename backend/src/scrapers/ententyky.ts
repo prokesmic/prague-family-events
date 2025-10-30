@@ -16,7 +16,7 @@ import {
 import { scrapeAndLoadCheerio, isFirecrawlAvailable } from '../utils/firecrawlHelper';
 
 const SOURCE_NAME = 'ententyky.cz';
-const BASE_URL = 'https://www.ententyky.cz/akce';
+const BASE_URL = 'https://www.ententyky.cz/akce-1/';
 
 /**
  * Scrape events from ententyky.cz
