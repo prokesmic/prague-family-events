@@ -6,9 +6,32 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { FilterOptions, AgeGroup } from '../types';
 import { startOfDay, endOfDay, addDays } from 'date-fns';
+import { getPlaceholderImage } from '../utils/placeholderImages';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+/**
+ * Add placeholder images to events that don't have images
+ */
+function addPlaceholderImages<T extends { imageUrl?: string | null; category?: string | null; title: string }>(
+  events: T | T[]
+): T | T[] {
+  const processEvent = (event: T): T => {
+    if (!event.imageUrl) {
+      return {
+        ...event,
+        imageUrl: getPlaceholderImage(event.category || undefined, event.title),
+      };
+    }
+    return event;
+  };
+
+  if (Array.isArray(events)) {
+    return events.map(processEvent);
+  }
+  return processEvent(events);
+}
 
 /**
  * GET /api/events
@@ -97,10 +120,13 @@ router.get('/', async (req: Request, res: Response) => {
       take: parseInt(limit as string),
     });
 
+    // Add placeholder images for events without images
+    const eventsWithImages = addPlaceholderImages(events) as typeof events;
+
     res.json({
       success: true,
       count: events.length,
-      events,
+      events: eventsWithImages,
     });
   } catch (error: any) {
     console.error('Error fetching events:', error);
@@ -143,9 +169,12 @@ router.get('/:id', async (req: Request, res: Response) => {
       });
     }
 
+    // Add placeholder image if missing
+    const eventWithImage = addPlaceholderImages(event) as typeof event;
+
     res.json({
       success: true,
-      event,
+      event: eventWithImage,
     });
   } catch (error: any) {
     console.error('Error fetching event:', error);

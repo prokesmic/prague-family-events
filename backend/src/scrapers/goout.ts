@@ -64,7 +64,8 @@ export async function scrapeGoOut(): Promise<ScraperResult> {
 
         const priceStr = extractTextWithFallback($el, ['.price', '.event-price']);
 
-        const imageUrl = extractAttrWithFallback($el, ['img'], 'src');
+        // Try multiple selectors for image - look in anchor tags first
+        const imageUrl = extractAttrWithFallback($el, ['a img', 'img', 'a > img'], 'src');
         const link = extractAttrWithFallback($el, ['a'], 'href');
 
         // Parse date and time (prefer datetime attribute if available)

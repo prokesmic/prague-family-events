@@ -177,9 +177,21 @@ export async function scrapePraguest(): Promise<ScraperResult> {
         const $description = $el.find('p, .description, .excerpt').first();
         const description = $description.text().trim();
 
-        // Extract image
+        // Extract image - try multiple selectors including inside anchor tags
+        let imageUrl: string | undefined;
         const $img = $el.find('img').first();
-        const imageUrl = $img.attr('src');
+        imageUrl = $img.attr('src');
+
+        // Fallback: look for images inside anchor tags
+        if (!imageUrl) {
+          const $anchorImg = $el.find('a img').first();
+          imageUrl = $anchorImg.attr('src');
+        }
+
+        // Fallback: look for data-src (lazy loading)
+        if (!imageUrl) {
+          imageUrl = $img.attr('data-src') || $el.find('img').first().attr('data-src');
+        }
 
         // Parse prices and age range from text
         const prices = extractPrices(fullText);
