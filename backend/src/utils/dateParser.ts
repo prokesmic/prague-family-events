@@ -79,15 +79,15 @@ export function parseCzechDate(dateStr: string): Date | null {
       const now = new Date();
       const currentYear = now.getFullYear();
 
-      // Try current year first
-      let date = new Date(currentYear, month - 1, day);
+      // Try current year first - set to 10 AM as default time for family events
+      let date = new Date(currentYear, month - 1, day, 10, 0, 0, 0);
 
       // If date is in the past (more than 1 day ago), use next year
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
       if (date < oneDayAgo) {
-        date = new Date(currentYear + 1, month - 1, day);
+        date = new Date(currentYear + 1, month - 1, day, 10, 0, 0, 0);
       }
 
       if (isValid(date)) {
@@ -105,7 +105,8 @@ export function parseCzechDate(dateStr: string): Date | null {
     const month = CZECH_MONTHS[monthName];
 
     if (month && day >= 1 && day <= 31) {
-      const date = new Date(year, month - 1, day);
+      // Set to 10 AM as default time for family events
+      const date = new Date(year, month - 1, day, 10, 0, 0, 0);
       if (isValid(date)) {
         return date;
       }
