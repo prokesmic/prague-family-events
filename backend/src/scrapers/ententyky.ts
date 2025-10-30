@@ -57,13 +57,15 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
       };
     }
 
-    // Find event elements - ententyky typically lists events in cards or items
-    const eventElements = $(
-      '.event, .akce, .event-item, article, .card, [class*="event"], [class*="akce"]'
-    ).filter((i, el) => {
-      const text = $(el).text().trim();
-      // Filter for elements that likely contain event info (have date/title)
-      return text.length > 30;
+    // Find event elements - ententyky uses anchor tags with img and h3 inside
+    // Look for links that contain both an image and h3 title
+    const eventElements = $('a').filter((i, el) => {
+      const $el = $(el);
+      const hasImage = $el.find('img').length > 0;
+      const hasH3 = $el.find('h3').length > 0;
+      const text = $el.text().trim();
+      // Must have image, h3, and reasonable text length
+      return hasImage && hasH3 && text.length > 20;
     });
 
     console.log(`[${SOURCE_NAME}] Found ${eventElements.length} potential event elements`);
@@ -72,47 +74,24 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
       try {
         const $el = $(element);
 
-        // Extract title
-        const title = extractTextWithFallback($el, [
-          'h1',
-          'h2',
-          'h3',
-          '.title',
-          '.event-title',
-          '.nazev',
-          '.name',
-          'a[class*="title"]'
-        ]);
-
+        // Extract title from h3
+        const title = $el.find('h3').first().text().trim();
         if (!title || title.length < 5) return;
 
-        // Extract description
-        const description = extractTextWithFallback($el, [
-          '.description',
-          '.perex',
-          '.popis',
-          'p',
-          '.excerpt',
-          '.text'
-        ]);
+        // Extract category from h4 (if present in parent or nearby elements)
+        const fullText = $el.text();
 
-        // Extract date
-        const dateStr = extractTextWithFallback($el, [
-          'time',
-          '.date',
-          '.datum',
-          '[class*="date"]',
-          '[class*="datum"]',
-          '.when'
-        ]);
+        // Extract description - may be in text after title
+        // For now, use full text as description source
+        const description = fullText.substring(0, 300).trim();
 
-        const dateTime = extractAttrWithFallback($el, ['time'], 'datetime');
-        const timeStr = extractTextWithFallback($el, [
-          '.time',
-          '.cas',
-          '[class*="time"]',
-          '[class*="cas"]'
-        ]);
+        // Extract date - look for Czech date pattern in text (e.g., "so 1.11. 14:00")
+        const dateMatch = fullText.match(/([a-z]{2})\s+(\d{1,2}\.\d{1,2}\.?)(\s+\d{1,2}:\d{2})?/i);
+        const dateStr = dateMatch ? dateMatch[0] : '';
+
+        // Note: extractAttrWithFallback might not be needed here
+        const dateTime = null; // Will parse from dateStr
+        const timeStr = dateMatch && dateMatch[3] ? dateMatch[3].trim() : '';
 
         // Parse date
         let startDateTime: Date | null = null;
@@ -167,14 +146,13 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
           '[class*="cena"]'
         ]);
 
-        // Extract image
-        const imageUrl = extractAttrWithFallback($el, ['img'], 'src');
+        // Extract image (img is inside the anchor)
+        const imageUrl = $el.find('img').first().attr('src');
 
-        // Extract link
-        const link = extractAttrWithFallback($el, ['a'], 'href');
+        // Extract link ($el is the anchor itself)
+        const link = $el.attr('href');
 
-        // Parse price and age range
-        const fullText = $el.text();
+        // Parse price and age range (fullText already defined above)
         const price = parseCzechPrice(priceStr);
         const prices = extractPrices(fullText);
         const ageRange = extractAgeRange(fullText);
