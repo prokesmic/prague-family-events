@@ -19,10 +19,11 @@ const BASE_SCORE = 50;
  */
 function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number, ageGroup?: AgeGroup): number {
   if (!ageMin && !ageMax) {
-    // No age restriction specified - give different scores based on age group
-    if (ageGroup === AgeGroup.TODDLER) return 18; // Most toddler events don't specify age
-    if (ageGroup === AgeGroup.CHILD) return 20; // Most kids events are broadly suitable
-    return 22; // Family events are usually all-ages
+    // No age restriction specified - lower scores for unknown age appropriateness
+    // This penalizes events with missing data to encourage better scraping
+    if (ageGroup === AgeGroup.TODDLER) return 8; // Changed from 18 - toddlers need specific content
+    if (ageGroup === AgeGroup.CHILD) return 12; // Changed from 20 - children need appropriate content
+    return 15; // Changed from 22 - family events more flexible but still need verification
   }
 
   if (!targetAge) {
@@ -77,7 +78,7 @@ function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number,
  * @returns Score between 0 and 15
  */
 function calculateDistanceScore(distance?: number): number {
-  if (!distance) return 8; // Unknown distance, give moderate score
+  if (!distance) return 3; // Changed from 8 - penalize unknown location
 
   if (distance < 10) return 15;
   if (distance < 30) return 10;
@@ -99,13 +100,18 @@ function calculatePriceScore(
   childPrice?: number,
   familyPrice?: number
 ): number {
+  // If no price data available, give low score (uncertainty penalty)
+  if (!adultPrice && !childPrice && !familyPrice) {
+    return 3; // Changed from implicit 15 to explicit 3 - penalize missing data
+  }
+
   // Calculate best family price (2 adults + 1 child)
   const individualPrice = (adultPrice || 0) * 2 + (childPrice || adultPrice || 0);
   const effectivePrice = familyPrice && familyPrice < individualPrice
     ? familyPrice
     : individualPrice;
 
-  if (effectivePrice === 0) return 15; // Free
+  if (effectivePrice === 0) return 15; // Actually free
   if (effectivePrice < 200) return 12;
   if (effectivePrice < 500) return 8;
   if (effectivePrice < 1000) return 4;
@@ -131,6 +137,34 @@ function calculateEventTypeScore(
   if (!category) return score;
 
   const cat = category.toLowerCase();
+
+  // Apply negative patterns for inappropriate events
+  if (ageGroup === AgeGroup.TODDLER) {
+    // Major penalties for clearly inappropriate events for toddlers
+    if (cat.includes('concert') && !cat.includes('kids') && !cat.includes('children')) {
+      score -= 15; // Concerts usually too loud and long for toddlers
+    }
+    if (cat.includes('club') || cat.includes('nightclub') || cat.includes('bar')) {
+      score -= 20; // Completely inappropriate
+    }
+    if (cat.includes('lecture') || cat.includes('conference') || cat.includes('business')) {
+      score -= 18; // Too complex and long
+    }
+    if (cat.includes('horror') || cat.includes('scary')) {
+      score -= 20; // Inappropriate content
+    }
+  } else if (ageGroup === AgeGroup.CHILD) {
+    // Moderate penalties for less suitable events for children
+    if (cat.includes('nightclub') || cat.includes('bar crawl')) {
+      score -= 20; // Completely inappropriate
+    }
+    if (cat.includes('business') || cat.includes('networking')) {
+      score -= 15; // Not relevant
+    }
+    if (cat.includes('horror') && !cat.includes('mild')) {
+      score -= 10; // Might be too scary
+    }
+  }
 
   // Outdoor events get bonus if weather is good
   if (isOutdoor && weather?.isGoodForOutdoor) {
@@ -242,7 +276,7 @@ function calculateTimingScore(startDateTime: Date, ageGroup?: AgeGroup): number 
  * @returns Score between 0 and 10
  */
 function calculateDurationScore(durationMinutes?: number, ageGroup?: AgeGroup): number {
-  if (!durationMinutes) return 5; // Unknown duration, give moderate score
+  if (!durationMinutes) return 2; // Changed from 5 - penalize unknown duration
 
   if (ageGroup === AgeGroup.TODDLER) {
     // Optimal: 30-60 minutes for toddlers
@@ -313,6 +347,55 @@ function calculateSeasonalityScore(
 }
 
 /**
+ * Calculate data completeness multiplier (0.7 - 1.0)
+ * Penalizes events with incomplete data to encourage better scraping
+ * @param event Event to evaluate
+ * @returns Multiplier between 0.7 and 1.0
+ */
+function calculateDataCompletenessMultiplier(event: GeocodedEvent): number {
+  let completeness = 0;
+  let totalFields = 0;
+
+  // Essential fields (weight: 2 each)
+  if (event.ageMin != null && event.ageMax != null) {
+    completeness += 2;
+  }
+  totalFields += 2;
+
+  if (event.distanceFromPrague != null) {
+    completeness += 2;
+  }
+  totalFields += 2;
+
+  // Important fields (weight: 1 each)
+  if (event.adultPrice != null || event.childPrice != null || event.familyPrice != null) {
+    completeness += 1;
+  }
+  totalFields += 1;
+
+  if (event.durationMinutes != null) {
+    completeness += 1;
+  }
+  totalFields += 1;
+
+  if (event.description && event.description.length > 50) {
+    completeness += 1;
+  }
+  totalFields += 1;
+
+  if (event.imageUrl) {
+    completeness += 1;
+  }
+  totalFields += 1;
+
+  const completenessRatio = completeness / totalFields;
+
+  // Map to 0.7 - 1.0 range
+  // 100% complete = 1.0x, 50% complete = 0.85x, 0% complete = 0.7x
+  return 0.7 + (completenessRatio * 0.3);
+}
+
+/**
  * Score a single event for a specific age group
  * @param event Event to score
  * @param ageGroup Target age group
@@ -344,16 +427,18 @@ export function scoreEvent(
     event.startDateTime
   );
 
+  // Apply data completeness multiplier to final score
+  const dataMultiplier = calculateDataCompletenessMultiplier(event);
   const totalScore = Math.min(
     100,
-    BASE_SCORE +
+    (BASE_SCORE +
       ageScore +
       distanceScore +
       priceScore +
       eventTypeScore +
       timingScore +
       durationScore +
-      seasonalityScore
+      seasonalityScore) * dataMultiplier
   );
 
   return {
