@@ -5,9 +5,10 @@
 
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { SCRAPERS, runAllScrapers } from '../scrapers';
-import { processScrapedEvents } from '../services/eventProcessor';
-import { calculateEventScores } from '../services/scoring';
+import { SCRAPERS, runAllScrapers, getAllEvents } from '../scrapers';
+import { deduplicateEvents } from '../services/deduplication';
+import { scoreEventForAllGroups } from '../services/scoring';
+import { RawEvent, ScoredEvent } from '../types';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -44,13 +45,15 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
     }
 
     // Process and store events
-    const allEvents = scraperResults.flatMap(r => r.events);
+    const allEvents = getAllEvents(scraperResults);
 
     // Deduplicate
-    const { deduplicatedEvents } = await processScrapedEvents(allEvents);
+    const deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
 
-    // Score events
-    const scoredEvents = deduplicatedEvents.map(event => calculateEventScores(event));
+    // Score events (without geocoding for quick admin trigger)
+    const scoredEvents: ScoredEvent[] = deduplicatedEvents.map((event: RawEvent) =>
+      scoreEventForAllGroups(event, undefined)
+    );
 
     // Store in database
     let storedCount = 0;
@@ -58,8 +61,58 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
       try {
         await prisma.event.upsert({
           where: { externalId: event.externalId },
-          update: event,
-          create: event,
+          update: {
+            source: event.source,
+            title: event.title,
+            description: event.description,
+            startDateTime: event.startDateTime,
+            endDateTime: event.endDateTime,
+            locationName: event.locationName,
+            address: event.address,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            distanceFromPrague: event.distanceFromPrague,
+            category: event.category,
+            ageMin: event.ageMin,
+            ageMax: event.ageMax,
+            adultPrice: event.adultPrice,
+            childPrice: event.childPrice,
+            familyPrice: event.familyPrice,
+            isOutdoor: event.isOutdoor || false,
+            durationMinutes: event.durationMinutes,
+            imageUrl: event.imageUrl,
+            bookingUrl: event.bookingUrl,
+            scoreToddler: event.scoreToddler,
+            scoreChild: event.scoreChild,
+            scoreFamily: event.scoreFamily,
+            updatedAt: new Date(),
+          },
+          create: {
+            externalId: event.externalId,
+            source: event.source,
+            title: event.title,
+            description: event.description,
+            startDateTime: event.startDateTime,
+            endDateTime: event.endDateTime,
+            locationName: event.locationName,
+            address: event.address,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            distanceFromPrague: event.distanceFromPrague,
+            category: event.category,
+            ageMin: event.ageMin,
+            ageMax: event.ageMax,
+            adultPrice: event.adultPrice,
+            childPrice: event.childPrice,
+            familyPrice: event.familyPrice,
+            isOutdoor: event.isOutdoor || false,
+            durationMinutes: event.durationMinutes,
+            imageUrl: event.imageUrl,
+            bookingUrl: event.bookingUrl,
+            scoreToddler: event.scoreToddler,
+            scoreChild: event.scoreChild,
+            scoreFamily: event.scoreFamily,
+          },
         });
         storedCount++;
       } catch (error) {
