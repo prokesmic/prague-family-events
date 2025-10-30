@@ -86,12 +86,13 @@ export async function scrapeSkvelecesko(): Promise<ScraperResult> {
       };
     }
 
-    // Find event elements
-    const eventElements = $(
-      '.event, .akce, article, .event-item, .card, [class*="event"], [class*="akce"]'
-    ).filter((i, el) => {
-      const text = $(el).text().trim();
-      return text.length > 30;
+    // Find event elements - they are anchor tags containing images
+    const eventElements = $('a').filter((i, el) => {
+      const $el = $(el);
+      const hasImage = $el.find('img').length > 0;
+      const text = $el.text().trim();
+      // Must have image and reasonable text length
+      return hasImage && text.length > 20;
     });
 
     console.log(`[${SOURCE_NAME}] Found ${eventElements.length} potential event elements`);
@@ -100,28 +101,15 @@ export async function scrapeSkvelecesko(): Promise<ScraperResult> {
       try {
         const $el = $(element);
 
-        // Extract title
-        const title = extractTextWithFallback($el, [
-          'h1',
-          'h2',
-          'h3',
-          '.title',
-          '.event-title',
-          '.nazev',
-          'a[class*="title"]'
-        ]);
+        // Extract title - the first line of text in the anchor (excluding image alt)
+        const textContent = $el.text().trim();
+        const lines = textContent.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        const title = lines[0] || '';
 
         if (!title || title.length < 5) return;
 
-        // Extract description
-        const description = extractTextWithFallback($el, [
-          '.description',
-          '.perex',
-          '.popis',
-          'p',
-          '.text',
-          '.excerpt'
-        ]);
+        // Description might be in subsequent lines or not available
+        const description = lines.length > 1 ? lines.slice(1).join(' ').substring(0, 300) : undefined;
 
         // Check if family-friendly
         const fullText = title + ' ' + (description || '');
@@ -202,10 +190,10 @@ export async function scrapeSkvelecesko(): Promise<ScraperResult> {
         ]);
 
         // Extract image
-        const imageUrl = extractAttrWithFallback($el, ['img'], 'src');
+        const imageUrl = $el.find('img').first().attr('src');
 
-        // Extract link
-        const link = extractAttrWithFallback($el, ['a'], 'href');
+        // Extract link - $el is already the anchor tag
+        const link = $el.attr('href');
 
         // Parse price and age range
         const price = parseCzechPrice(priceStr);

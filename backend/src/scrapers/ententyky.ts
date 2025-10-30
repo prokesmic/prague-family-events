@@ -85,20 +85,36 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
         // For now, use full text as description source
         const description = fullText.substring(0, 300).trim();
 
-        // Extract date - look for Czech date pattern in text (e.g., "so 1.11. 14:00")
-        const dateMatch = fullText.match(/([a-z]{2})\s+(\d{1,2}\.\d{1,2}\.?)(\s+\d{1,2}:\d{2})?/i);
-        const dateStr = dateMatch ? dateMatch[0] : '';
+        // Extract date from <p class="date"> or similar elements
+        // Date format: "čt 30.10." or "so 1.11. 14:00"
+        let dateStr = '';
+        let timeStr = '';
 
-        // Note: extractAttrWithFallback might not be needed here
-        const dateTime = null; // Will parse from dateStr
-        const timeStr = dateMatch && dateMatch[3] ? dateMatch[3].trim() : '';
+        // Try to find date in specific date element
+        const dateElement = $el.find('.date, p').filter((i, p) => {
+          const text = $(p).text().trim();
+          return /^[a-z]{2}\s+\d{1,2}\.\d{1,2}\.?(\s+\d{1,2}:\d{2})?$/i.test(text);
+        }).first();
 
-        // Parse date
-        let startDateTime: Date | null = null;
-        if (dateTime) {
-          startDateTime = new Date(dateTime);
+        if (dateElement.length > 0) {
+          const dateText = dateElement.text().trim();
+          const dateMatch = dateText.match(/([a-z]{2})\s+(\d{1,2}\.\d{1,2}\.?)(\s+\d{1,2}:\d{2})?/i);
+          if (dateMatch) {
+            dateStr = dateMatch[2]; // Just the "30.10." part
+            timeStr = dateMatch[3] ? dateMatch[3].trim() : '';
+          }
+        } else {
+          // Fallback: search in full text
+          const dateMatch = fullText.match(/([a-z]{2})\s+(\d{1,2}\.\d{1,2}\.?)(\s+\d{1,2}:\d{2})?/i);
+          if (dateMatch) {
+            dateStr = dateMatch[2];
+            timeStr = dateMatch[3] ? dateMatch[3].trim() : '';
+          }
         }
-        if (!startDateTime || isNaN(startDateTime.getTime())) {
+
+        // Parse date using combineDateAndTime
+        let startDateTime: Date | null = null;
+        if (dateStr) {
           startDateTime = combineDateAndTime(dateStr, timeStr);
         }
 
