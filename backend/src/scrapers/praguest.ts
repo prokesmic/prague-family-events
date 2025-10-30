@@ -1,22 +1,63 @@
 /**
- * Scraper for praguest.com/akce
+ * Scraper for praguest.com/en/kid-s-events
  * Uses Firecrawl for dynamic content rendering
  */
 
 import { RawEvent, ScraperResult } from '../types';
-import { parseCzechDate, combineDateAndTime, extractDuration } from '../utils/dateParser';
-import { parseCzechPrice, extractPrices, extractAgeRange } from '../utils/priceParser';
+import { extractDuration } from '../utils/dateParser';
+import { extractPrices, extractAgeRange } from '../utils/priceParser';
 import {
-  extractTextWithFallback,
-  extractAttrWithFallback,
   cleanText,
   determineCategoryFromText,
   createHash
 } from '../utils/scraperHelper';
 import { scrapeAndLoadCheerio, isFirecrawlAvailable } from '../utils/firecrawlHelper';
+import { parse } from 'date-fns';
 
 const SOURCE_NAME = 'praguest.com';
-const BASE_URL = 'https://www.praguest.com/akce';
+const BASE_URL = 'https://www.praguest.com/en/kid-s-events';
+
+/**
+ * Parse date from praguest format: "17 July 2025 10:00 - 31 October 2025 20:00"
+ */
+function parsePraguestDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+
+  try {
+    // Extract start date from range (before the dash)
+    const startPart = dateStr.split('-')[0].trim();
+
+    // Try formats like "17 July 2025 10:00"
+    const formats = [
+      'd MMMM yyyy HH:mm',
+      'd MMMM yyyy',
+      'MMMM d, yyyy',
+      'd.M.yyyy HH:mm',
+      'd.M.yyyy'
+    ];
+
+    for (const format of formats) {
+      try {
+        const date = parse(startPart, format, new Date());
+        if (!isNaN(date.getTime())) {
+          return date;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    // Fallback to new Date()
+    const date = new Date(startPart);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  } catch (error) {
+    console.error(`Error parsing date: ${dateStr}`, error);
+  }
+
+  return null;
+}
 
 /**
  * Scrape events from praguest.com
@@ -57,8 +98,15 @@ export async function scrapePraguest(): Promise<ScraperResult> {
       };
     }
 
-    // Find event items - praguest.com typically uses article or div elements for events
-    const eventElements = $('.event, .event-item, article[class*="event"], div[class*="event-card"]');
+    // Find event items - look for li or article elements containing events
+    // Try multiple selectors to find event containers
+    const eventElements = $('li, article, .event-item, [class*="event"]').filter((i, el) => {
+      const $el = $(el);
+      const text = $el.text();
+      const hasTitle = $el.find('h3, h2').length > 0;
+      const hasLink = $el.find('a').length > 0;
+      return hasTitle && hasLink && text.length > 50;
+    });
 
     console.log(`[${SOURCE_NAME}] Found ${eventElements.length} potential event elements`);
 
@@ -66,106 +114,88 @@ export async function scrapePraguest(): Promise<ScraperResult> {
       try {
         const $el = $(element);
 
-        // Extract title
-        const title = extractTextWithFallback($el, [
-          'h2',
-          'h3',
-          '.event-title',
-          '.title',
-          'a[class*="title"]',
-          '.event-name'
-        ]);
+        // Extract title from h3 or h2
+        const $titleEl = $el.find('h3, h2').first();
+        const title = $titleEl.text().trim();
 
-        if (!title || title.length < 5) return;
-
-        // Filter for family/kids events
-        const fullText = $el.text().toLowerCase();
-        const isFamilyEvent =
-          fullText.includes('děti') ||
-          fullText.includes('rodina') ||
-          fullText.includes('family') ||
-          fullText.includes('kids') ||
-          fullText.includes('children') ||
-          fullText.includes('dětsk');
-
-        // Skip non-family events
-        if (!isFamilyEvent) {
+        if (!title || title.length < 3) {
           return;
         }
 
-        // Extract description
-        const description = extractTextWithFallback($el, [
-          '.description',
-          '.event-description',
-          '.perex',
-          'p',
-          '.excerpt'
-        ]);
+        // Extract link
+        const $linkEl = $el.find('a').first();
+        const link = $linkEl.attr('href');
 
-        // Extract date
-        const dateStr = extractTextWithFallback($el, [
-          'time',
-          '.date',
-          '.event-date',
-          '[class*="date"]',
-          '.when'
-        ]);
+        // Get all text content to parse date and location
+        const fullText = $el.text();
 
-        const dateTime = extractAttrWithFallback($el, ['time'], 'datetime');
-        const timeStr = extractTextWithFallback($el, ['.time', '.event-time', '[class*="time"]']);
+        // Try to find date pattern (e.g., "17 July 2025 10:00 - 31 October 2025 20:00")
+        const dateMatch = fullText.match(/(\d{1,2}\s+\w+\s+\d{4}\s+\d{1,2}:\d{2})\s*-\s*(\d{1,2}\s+\w+\s+\d{4}\s+\d{1,2}:\d{2})/);
+        const simpleDateMatch = fullText.match(/(\d{1,2}\s+\w+\s+\d{4})/);
 
-        // Parse date
-        let startDateTime: Date | null = null;
-        if (dateTime) {
-          startDateTime = new Date(dateTime);
+        let dateStr = '';
+        if (dateMatch) {
+          dateStr = dateMatch[1];
+        } else if (simpleDateMatch) {
+          dateStr = simpleDateMatch[1];
         }
-        if (!startDateTime || isNaN(startDateTime.getTime())) {
-          startDateTime = combineDateAndTime(dateStr, timeStr);
-        }
+
+        const startDateTime = parsePraguestDate(dateStr);
 
         if (!startDateTime) {
           console.log(`[${SOURCE_NAME}] Skipping event without valid date: ${title}`);
           return;
         }
 
-        // Extract location
-        const location = extractTextWithFallback($el, [
-          '.location',
-          '.venue',
-          '.place',
-          '[class*="location"]',
-          '.where'
-        ]);
+        // Filter out past events
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        if (startDateTime < now) {
+          return;
+        }
 
-        // Extract price
-        const priceStr = extractTextWithFallback($el, [
-          '.price',
-          '.event-price',
-          '[class*="price"]'
-        ]);
+        // Try to extract location (usually after the date)
+        const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        let location = '';
+
+        // Location is typically after the date line
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(dateStr)) {
+            // Next non-empty line might be location
+            if (i + 1 < lines.length) {
+              const nextLine = lines[i + 1];
+              // Check if it looks like a location (not a link, not too long)
+              if (nextLine.length < 100 && !nextLine.includes('http') && !nextLine.includes('info')) {
+                location = nextLine;
+                break;
+              }
+            }
+          }
+        }
+
+        // Extract description - look for longer text blocks
+        const $description = $el.find('p, .description, .excerpt').first();
+        const description = $description.text().trim();
 
         // Extract image
-        const imageUrl = extractAttrWithFallback($el, ['img'], 'src');
+        const $img = $el.find('img').first();
+        const imageUrl = $img.attr('src');
 
-        // Extract link
-        const link = extractAttrWithFallback($el, ['a'], 'href');
-
-        // Parse price and age range
-        const price = parseCzechPrice(priceStr);
-        const prices = extractPrices($el.text());
-        const ageRange = extractAgeRange($el.text());
+        // Parse prices and age range from text
+        const prices = extractPrices(fullText);
+        const ageRange = extractAgeRange(fullText);
 
         // Determine category
-        const category = determineCategoryFromText(title + ' ' + (description || ''));
+        const category = determineCategoryFromText(title + ' ' + description);
 
         // Check if outdoor
-        const lowerText = cleanText(title + ' ' + (description || '')).toLowerCase();
+        const lowerText = cleanText(title + ' ' + description).toLowerCase();
         const isOutdoor =
-          lowerText.includes('venku') ||
           lowerText.includes('outdoor') ||
           lowerText.includes('park') ||
-          lowerText.includes('zahrada') ||
-          lowerText.includes('příroda');
+          lowerText.includes('garden') ||
+          lowerText.includes('nature') ||
+          lowerText.includes('playground');
 
         // Create event object
         const event: RawEvent = {
@@ -179,11 +209,11 @@ export async function scrapePraguest(): Promise<ScraperResult> {
           category,
           ageMin: ageRange.ageMin,
           ageMax: ageRange.ageMax,
-          adultPrice: prices.adultPrice || price || undefined,
+          adultPrice: prices.adultPrice || undefined,
           childPrice: prices.childPrice,
           familyPrice: prices.familyPrice,
           isOutdoor,
-          durationMinutes: extractDuration($el.text()) || undefined,
+          durationMinutes: extractDuration(fullText) || undefined,
           imageUrl: imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `https://www.praguest.com${imageUrl}`) : undefined,
           bookingUrl: link ? (link.startsWith('http') ? link : `https://www.praguest.com${link}`) : undefined,
         };
