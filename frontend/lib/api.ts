@@ -93,6 +93,31 @@ export const eventAPI = {
 };
 
 /**
+ * Admin API
+ */
+export const adminAPI = {
+  // Get scraper health status
+  getScraperHealth: async () => {
+    const response = await api.get('/admin/scrape/health');
+    return response.data;
+  },
+
+  // Get quality stats
+  getQualityStats: async () => {
+    const response = await api.get('/admin/stats/quality');
+    return response.data;
+  },
+
+  // Trigger manual scrape
+  triggerScrape: async (source?: string) => {
+    const response = await api.post('/admin/scrape/trigger', null, {
+      params: source ? { source } : undefined,
+    });
+    return response.data;
+  },
+};
+
+/**
  * Favorites API
  */
 export const favoritesAPI = {
