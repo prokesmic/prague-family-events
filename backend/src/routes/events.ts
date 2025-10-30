@@ -102,13 +102,25 @@ router.get('/', async (req: Request, res: Response) => {
       where.isOutdoor = false;
     }
 
-    // Determine which score field to use for ordering
-    const scoreField =
-      view === 'toddler'
-        ? 'scoreToddler'
-        : view === 'child'
-        ? 'scoreChild'
-        : 'scoreFamily';
+    // Determine which score field to use for ordering and minimum threshold
+    let scoreField: string;
+    let minScore: number;
+
+    if (view === 'toddler') {
+      scoreField = 'scoreToddler';
+      minScore = 55; // Strict - toddlers need specific, age-appropriate content
+    } else if (view === 'child') {
+      scoreField = 'scoreChild';
+      minScore = 60; // Moderate - children need appropriate content
+    } else {
+      scoreField = 'scoreFamily';
+      minScore = 50; // Flexible - family events are more general
+    }
+
+    // Add minimum score filter
+    where[scoreField] = {
+      gte: minScore,
+    };
 
     // Fetch events
     const events = await prisma.event.findMany({
