@@ -57,15 +57,15 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
       };
     }
 
-    // Find event elements - ententyky uses anchor tags with img and h3 inside
-    // Look for links that contain both an image and h3 title
-    const eventElements = $('a').filter((i, el) => {
+    // Find event elements - ententyky uses event cards with separate img and h3 elements
+    // Look for containers that have both an image and a title (h3 > a)
+    const eventElements = $('div, article, section').filter((i, el) => {
       const $el = $(el);
       const hasImage = $el.find('img').length > 0;
-      const hasH3 = $el.find('h3').length > 0;
+      const hasTitleLink = $el.find('h3 > a').length > 0;
       const text = $el.text().trim();
-      // Must have image, h3, and reasonable text length
-      return hasImage && hasH3 && text.length > 20;
+      // Must have image, title link in h3, and reasonable text length
+      return hasImage && hasTitleLink && text.length > 50;
     });
 
     console.log(`[${SOURCE_NAME}] Found ${eventElements.length} potential event elements`);
@@ -74,11 +74,11 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
       try {
         const $el = $(element);
 
-        // Extract title from h3
-        const title = $el.find('h3').first().text().trim();
+        // Extract title from h3 > a
+        const title = $el.find('h3 > a').first().text().trim();
         if (!title || title.length < 5) return;
 
-        // Extract category from h4 (if present in parent or nearby elements)
+        // Get full text for parsing
         const fullText = $el.text();
 
         // Extract description - may be in text after title
@@ -146,11 +146,11 @@ export async function scrapeEntentyky(): Promise<ScraperResult> {
           '[class*="cena"]'
         ]);
 
-        // Extract image (img is inside the anchor)
+        // Extract image
         const imageUrl = $el.find('img').first().attr('src');
 
-        // Extract link ($el is the anchor itself)
-        const link = $el.attr('href');
+        // Extract link from h3 > a
+        const link = $el.find('h3 > a').first().attr('href');
 
         // Parse price and age range (fullText already defined above)
         const price = parseCzechPrice(priceStr);
