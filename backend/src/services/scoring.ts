@@ -6,24 +6,24 @@
 import { GeocodedEvent, ScoredEvent, AgeGroup, ScoreFactors } from '../types';
 import { WeatherData } from '../types';
 
-const BASE_SCORE = 50;
+const BASE_SCORE = 35; // Lowered from 50 to make age appropriateness more important
 
 /**
- * Calculate age appropriateness score (max 25 points)
- * Enhanced version with better age range handling
+ * Calculate age appropriateness score (max 35 points)
+ * Enhanced version with better age range handling and stronger differentiation
  * @param ageMin Minimum age for event
  * @param ageMax Maximum age for event
  * @param targetAge Target age to score for
  * @param ageGroup The age group being scored for
- * @returns Score between 0 and 25
+ * @returns Score between 0 and 35
  */
 function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number, ageGroup?: AgeGroup): number {
   if (!ageMin && !ageMax) {
-    // No age restriction specified - lower scores for unknown age appropriateness
-    // This penalizes events with missing data to encourage better scraping
-    if (ageGroup === AgeGroup.TODDLER) return 8; // Changed from 18 - toddlers need specific content
-    if (ageGroup === AgeGroup.CHILD) return 12; // Changed from 20 - children need appropriate content
-    return 15; // Changed from 22 - family events more flexible but still need verification
+    // No age restriction specified - aggressive penalties to differentiate categories
+    // This creates strong separation between toddler/child/family views
+    if (ageGroup === AgeGroup.TODDLER) return 5; // Very strict - toddlers need specific content
+    if (ageGroup === AgeGroup.CHILD) return 15; // Moderate - children need appropriate content
+    return 25; // Flexible - family events are more general
   }
 
   if (!targetAge) {
@@ -32,40 +32,40 @@ function calculateAgeScore(ageMin?: number, ageMax?: number, targetAge?: number,
 
   // Perfect match: targetAge is within range
   if (ageMin && ageMax && targetAge >= ageMin && targetAge <= ageMax) {
-    return 25;
+    return 35;
   }
 
   // Within range but not specified both bounds
   if (ageMin && !ageMax && targetAge >= ageMin) {
     // Event says "X+ years", check how close we are
     const diff = targetAge - ageMin;
-    if (diff < 2) return 23;
-    if (diff < 5) return 20;
-    return 16;
+    if (diff < 2) return 30;
+    if (diff < 5) return 26;
+    return 22;
   }
 
   if (ageMax && !ageMin && targetAge <= ageMax) {
     // Event says "up to X years", check how close we are
     const diff = ageMax - targetAge;
-    if (diff > 2) return 23;
-    if (diff >= 0) return 20;
-    return 16;
+    if (diff > 2) return 30;
+    if (diff >= 0) return 26;
+    return 22;
   }
 
   // Close to the range - use graduated scoring
   if (ageMin && targetAge < ageMin) {
     const diff = ageMin - targetAge;
-    if (diff <= 1) return 15;
-    if (diff <= 2) return 10;
-    if (diff <= 4) return 5;
+    if (diff <= 1) return 20;
+    if (diff <= 2) return 14;
+    if (diff <= 4) return 7;
     return 0;
   }
 
   if (ageMax && targetAge > ageMax) {
     const diff = targetAge - ageMax;
-    if (diff <= 1) return 15;
-    if (diff <= 2) return 10;
-    if (diff <= 4) return 5;
+    if (diff <= 1) return 20;
+    if (diff <= 2) return 14;
+    if (diff <= 4) return 7;
     return 0;
   }
 
