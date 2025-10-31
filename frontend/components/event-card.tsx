@@ -99,15 +99,20 @@ export function EventCard({ event, view, onClick }: EventCardProps) {
       </div>
 
       {/* Image */}
-      {event.imageUrl && (
-        <div className="relative w-full h-48 bg-gray-200">
-          <img
-            src={event.imageUrl}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
+      <div className="relative w-full h-48 bg-gray-200">
+        <img
+          src={event.imageUrl || 'https://picsum.photos/seed/100/800/600'}
+          alt={event.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            const target = e.target as HTMLImageElement;
+            if (target.src !== 'https://picsum.photos/seed/100/800/600') {
+              target.src = 'https://picsum.photos/seed/100/800/600';
+            }
+          }}
+        />
+      </div>
 
       <CardHeader>
         <CardTitle className="text-lg pr-16">{event.title}</CardTitle>

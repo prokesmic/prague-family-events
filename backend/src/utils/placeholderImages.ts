@@ -11,44 +11,44 @@
  * @returns Placeholder image URL
  */
 export function getPlaceholderImage(category?: string, title?: string): string {
-  // Map categories to Unsplash search terms
-  const categoryImageMap: Record<string, string> = {
-    museum: 'museum-children',
-    theater: 'puppet-theater',
-    workshop: 'kids-workshop-art',
-    sport: 'children-playing-sports',
-    outdoor: 'children-playground',
-    music: 'children-music',
-    exhibition: 'art-exhibition',
-    festival: 'family-festival',
-    cinema: 'movie-theater',
-    park: 'children-park',
-    zoo: 'zoo-animals',
-    playground: 'playground',
-    educational: 'children-learning',
-    interactive: 'kids-interactive',
-    nature: 'children-nature',
-    adventure: 'kids-adventure',
-    craft: 'kids-crafts',
-    science: 'science-kids',
-    reading: 'children-books',
-    default: 'happy-children-family',
+  // Map categories to seed numbers for consistent placeholder images
+  const categoryImageMap: Record<string, number> = {
+    museum: 101,
+    theater: 102,
+    workshop: 103,
+    sport: 104,
+    outdoor: 105,
+    music: 106,
+    exhibition: 107,
+    festival: 108,
+    cinema: 109,
+    park: 110,
+    zoo: 111,
+    playground: 112,
+    educational: 113,
+    interactive: 114,
+    nature: 115,
+    adventure: 116,
+    craft: 117,
+    science: 118,
+    reading: 119,
+    default: 100,
   };
 
   const cat = category?.toLowerCase() || 'default';
 
   // Find the best matching category
-  let searchTerm = categoryImageMap.default;
+  let seedNumber = categoryImageMap.default;
   for (const [key, value] of Object.entries(categoryImageMap)) {
     if (cat.includes(key)) {
-      searchTerm = value;
+      seedNumber = value;
       break;
     }
   }
 
-  // Use Unsplash Source API for random images
-  // Size: 800x600 for good quality
-  return `https://source.unsplash.com/800x600/?${searchTerm}`;
+  // Use Lorem Picsum for reliable placeholder images
+  // Size: 800x600 for good quality, with seed for consistency
+  return `https://picsum.photos/seed/${seedNumber}/800/600`;
 }
 
 /**
