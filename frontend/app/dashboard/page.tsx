@@ -50,8 +50,8 @@ export default function DashboardPage() {
 
       {/* Calendar View Selector */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Link href="/dashboard/toddler">
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-pink-400">
+        <Link href="/dashboard/toddler" className="h-full">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-pink-400 h-full">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-pink-100 rounded-full">
@@ -76,8 +76,8 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/child">
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-blue-400">
+        <Link href="/dashboard/child" className="h-full">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-blue-400 h-full">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-100 rounded-full">
@@ -102,8 +102,8 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/family">
-          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-green-400">
+        <Link href="/dashboard/family" className="h-full">
+          <Card className="cursor-pointer hover:shadow-lg transition-all hover:border-green-400 h-full">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-100 rounded-full">
