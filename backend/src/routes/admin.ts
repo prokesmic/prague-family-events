@@ -14,6 +14,31 @@ const router = Router();
 const prisma = new PrismaClient();
 
 /**
+ * GET /api/admin/scrape/test
+ * Test scraper imports and basic functionality
+ */
+router.get('/scrape/test', async (req: Request, res: Response) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Scraper endpoint is accessible',
+      scrapers: SCRAPERS.map(s => s.name),
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasFirecrawlKey: !!process.env.FIRECRAWL_API_KEY,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+/**
  * POST /api/admin/scrape/trigger
  * Manually trigger scraper run for all sources or specific source
  * Query params:
@@ -24,6 +49,7 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
     const { source } = req.query;
 
     console.log(`[Admin] Manual scrape triggered${source ? ` for ${source}` : ' for all sources'}`);
+    console.log(`[Admin] Environment: NODE_ENV=${process.env.NODE_ENV}, hasFirecrawl=${!!process.env.FIRECRAWL_API_KEY}`);
 
     let scraperResults;
 
@@ -37,10 +63,12 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
         });
       }
 
+      console.log(`[Admin] Running scraper: ${scraper.name}`);
       const result = await scraper.fn();
       scraperResults = [result];
     } else {
       // Run all scrapers
+      console.log(`[Admin] Running all ${SCRAPERS.length} scrapers`);
       scraperResults = await runAllScrapers(1000); // 1 second delay between scrapers
     }
 
@@ -143,9 +171,11 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('[Admin] Scrape trigger error:', error);
+    console.error('[Admin] Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
