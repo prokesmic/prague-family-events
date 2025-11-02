@@ -72,12 +72,9 @@ router.get('/', async (req: Request, res: Response) => {
         where.startDateTime.lte = new Date(dateTo as string);
       }
     } else {
-      // Default: only future events, up to one year in advance
-      const oneYearFromNow = new Date();
-      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+      // Default: only future events
       where.startDateTime = {
         gte: new Date(),
-        lte: oneYearFromNow,
       };
     }
 
