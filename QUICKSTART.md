@@ -66,8 +66,6 @@ cp .env.example .env
 Edit `.env`:
 ```env
 DATABASE_URL="postgresql://..." # Same as backend
-NEXTAUTH_SECRET="$(openssl rand -base64 32)"
-NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_API_URL="http://localhost:3001/api"
 ```
 
@@ -128,10 +126,9 @@ Change `PORT` in backend `.env` to 3002 or kill the process using the port.
 
 ## Next Steps
 
-1. **Create users**: Use Prisma Studio (`npx prisma studio`) to add users to the database
-2. **Implement remaining scrapers**: Follow the pattern in `backend/src/scrapers/goout.ts`
-3. **Add NextAuth**: Implement authentication in `frontend/lib/auth.ts`
-4. **Deploy**: Follow deployment instructions in README.md
+1. **Implement remaining scrapers**: Follow the pattern in `backend/src/scrapers/goout.ts`
+2. **Add `FIRE_CRAWL_API_KEY`**: To run all scrapers, add a `FIRE_CRAWL_API_KEY` to the `backend/.env` file.
+3. **Deploy**: Follow deployment instructions in README.md
 
 ## Need Help?
 

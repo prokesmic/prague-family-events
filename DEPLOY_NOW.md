@@ -32,7 +32,7 @@ git push -u origin main
    DATABASE_URL=<from Railway PostgreSQL>
    NODE_ENV=production
    PORT=3001
-   FIRECRAWL_API_KEY=fc-7b5a295a433c43aaa4bc2df621a20aeb
+   FIRECRAWL_API_KEY=<YOUR_FIRE_CRAWL_API_KEY>
    ENABLE_CRON=true
    SCRAPER_DELAY_MS=2000
    ```
@@ -111,7 +111,7 @@ Use Railway as described above (Vercel serverless functions don't support cron j
 ## What You Built 🎯
 
 **Frontend**:
-- Modern Next.js 15 with App Router
+- Modern Next.js 16 with App Router
 - TypeScript for type safety
 - Tailwind CSS for styling
 - Mapbox GL for interactive maps

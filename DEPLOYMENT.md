@@ -4,7 +4,7 @@ This guide will help you deploy the Prague Family Events application to producti
 
 ## Architecture Overview
 
-- **Frontend**: Next.js 15 (App Router) → Deploy to **Vercel**
+- **Frontend**: Next.js 16 (App Router) → Deploy to **Vercel**
 - **Backend**: Express.js + PostgreSQL → Deploy to **Railway** or **Render**
 - **Database**: PostgreSQL → **Railway** or **Supabase**
 
@@ -65,7 +65,7 @@ DATABASE_URL=postgresql://... (from Railway PostgreSQL service)
 NODE_ENV=production
 PORT=3001
 FRONTEND_URL=https://your-frontend.vercel.app (will add later)
-FIRECRAWL_API_KEY=fc-7b5a295a433c43aaa4bc2df621a20aeb
+FIRECRAWL_API_KEY=<YOUR_FIRE_CRAWL_API_KEY>
 ENABLE_CRON=true
 SCRAPER_DELAY_MS=2000
 OPENWEATHER_API_KEY=(optional)
@@ -174,7 +174,7 @@ DATABASE_URL="postgresql://user:password@localhost:5432/prague_family_events"
 NODE_ENV="development"
 PORT=3001
 FRONTEND_URL="http://localhost:3000"
-FIRECRAWL_API_KEY="fc-7b5a295a433c43aaa4bc2df621a20aeb"
+FIRECRAWL_API_KEY="<YOUR_FIRE_CRAWL_API_KEY>"
 ENABLE_CRON="false"
 SCRAPER_DELAY_MS=2000
 OPENWEATHER_API_KEY=""  # Optional

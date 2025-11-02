@@ -4,18 +4,10 @@
 
 Your Prague Family Events Calendar is now **fully deployed and live**! 🎉
 
-### Live URLs:
-- **Frontend**: https://prague-family-events-git-main-michalp-projects.vercel.app/dashboard
-- **Backend**: https://prague-family-events-production.up.railway.app/api
-
 ### What's Working:
 - ✅ Backend deployed on Railway with PostgreSQL database
 - ✅ Frontend deployed on Vercel
-- ✅ 4 working scrapers collecting 50+ events:
-  - goout.net (5 events)
-  - vylety-zabava.cz (7 events)
-  - kdykde.cz (18 events)
-  - kudyznudy.cz (23 events)
+- ✅ 9 working scrapers collecting 50+ events
 - ✅ Automatic daily scraping at 6 AM (Prague time)
 - ✅ Event geocoding and quality scoring
 - ✅ Advanced filtering by age, category, date, price
@@ -49,38 +41,21 @@ Your Prague Family Events Calendar is now **fully deployed and live**! 🎉
 
 ### 2. Implement Additional Scrapers
 
-**Four scrapers still need implementation**:
+**Two scrapers still need implementation**:
 
-#### A. praguest.com
-- **URL**: https://www.praguest.com/akce
-- **Type**: Event aggregator for Prague
-- **Estimated Events**: 10-15
-- **Challenge**: Need to check if they have family/kids filtering
-
-#### B. ententyky.cz
-- **URL**: https://www.ententyky.cz/akce
-- **Type**: Kids activities and events
-- **Estimated Events**: 15-20
-- **Challenge**: May need Firecrawl for JavaScript-rendered content
-
-#### C. slevomat.cz
-- **URL**: https://www.slevomat.cz/slevy/pro-deti
-- **Type**: Deals/discounts for kids activities
-- **Estimated Events**: 10-15
-- **Challenge**: Mostly deals, not time-bound events
-- **Note**: May want to filter for only time-sensitive events
-
-#### D. skvelecesko.cz
-- **URL**: https://www.skvelecesko.cz/akce
-- **Type**: Czech tourism events
+#### A. prahahrave.cz
+- **URL**: https://www.prahahrave.cz/
+- **Type**: Interactive Prague events
 - **Estimated Events**: 5-10
-- **Challenge**: Need to filter for Prague region and family-friendly
+
+#### B. aktivnidite.cz
+- **URL**: https://www.aktivnidite.cz/
+- **Type**: Active children's events
+- **Estimated Events**: 5-10
 
 **Files to Create**:
-- `backend/src/scrapers/praguest.ts`
-- `backend/src/scrapers/ententyky.ts`
-- `backend/src/scrapers/slevomat.ts`
-- `backend/src/scrapers/skvelecesko.ts`
+- `backend/src/scrapers/prahahrave.ts`
+- `backend/src/scrapers/aktivnidite.ts`
 
 **File to Modify**:
 - `backend/src/scrapers/index.ts` - Register new scrapers
@@ -137,10 +112,10 @@ Your Prague Family Events Calendar is now **fully deployed and live**! 🎉
 
 After deployment scrape:
 - Total Events: 53+
-- Active Sources: 4 out of 8
+- Active Sources: 9 out of 11
 - Update Frequency: Daily at 6:00 AM
 - Database: PostgreSQL on Railway
-- Frontend: Next.js 15 on Vercel
+- Frontend: Next.js 16 on Vercel
 - Backend: Express.js on Railway
 
 ---
@@ -152,15 +127,15 @@ After deployment scrape:
 DATABASE_URL=postgresql://...
 NODE_ENV=production
 PORT=3001
-FRONTEND_URL=https://prague-family-events-git-main-michalp-projects.vercel.app
-FIRECRAWL_API_KEY=fc-7b5a295a433c43aaa4bc2df621a20aeb
+FRONTEND_URL=<YOUR_VERCEL_URL>
+FIRECRAWL_API_KEY=<YOUR_FIRE_CRAWL_API_KEY>
 ENABLE_CRON=true
 SCRAPER_DELAY_MS=2000
 ```
 
 ### Vercel (Frontend)
 ```
-NEXT_PUBLIC_API_URL=https://prague-family-events-production.up.railway.app/api
+NEXT_PUBLIC_API_URL=<YOUR_RAILWAY_URL>/api
 ```
 
 ---

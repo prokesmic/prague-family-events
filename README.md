@@ -19,29 +19,27 @@ A private, automated event discovery calendar web application for finding family
 - ✅ **Mobile-Responsive**: Optimized for desktop, tablet, and mobile devices
 
 ### Event Sources (11 Total)
-1. **goout.net** - Events filtered for children in Prague
-2. **kudyznudy.cz** - Prague and Central Bohemia events
-3. praguest.com - Child-friendly activities (placeholder)
-4. ententyky.cz - Family events (placeholder)
-5. vylety-zabava.cz - Prague children's events (placeholder)
-6. overenorodici.cz - Parent-verified venues (placeholder)
-7. slevomat.cz - Discounted family experiences (placeholder)
-8. skvelecesko.cz - Family activities in Prague (placeholder)
-9. prahahrave.cz - Interactive Prague events (placeholder)
-10. aktivnidite.cz - Active children's events (placeholder)
-
-*Note: 2 scrapers fully implemented, 9 ready for implementation using the same pattern*
+1. **goout.net** - Events filtered for children in Prague (Implemented)
+2. **kudyznudy.cz** - Prague and Central Bohemia events (Implemented)
+3. **kdykde.cz** - Events in Prague (Implemented)
+4. **praguest.com** - Child-friendly activities (Implemented)
+5. **ententyky.cz** - Family events (Implemented)
+6. **vylety-zabava.cz** - Prague children's events (Implemented)
+7. **overenorodici.cz** - Parent-verified venues (Implemented)
+8. **slevomat.cz** - Discounted family experiences (Implemented, but requires Firecrawl API key)
+9. **skvelecesko.cz** - Family activities in Prague (Implemented)
+10. **prahahrave.cz** - Interactive Prague events (Not Implemented)
+11. **aktivnidite.cz** - Active children's events (Not Implemented)
 
 ## Tech Stack
 
 ### Frontend
-- **Next.js 15** with App Router
+- **Next.js 16** with App Router
 - **TypeScript** for type safety
 - **TailwindCSS** for styling
 - **shadcn/ui** components
 - **FullCalendar** for calendar views
 - **Leaflet.js** for interactive maps
-- **NextAuth.js** for authentication
 - **Axios** for API calls
 - **date-fns** for date handling
 
@@ -67,8 +65,6 @@ A private, automated event discovery calendar web application for finding family
 prague-family-events/
 ├── frontend/                # Next.js frontend
 │   ├── app/
-│   │   ├── (auth)/
-│   │   │   └── login/       # Login page
 │   │   ├── dashboard/       # Main dashboard
 │   │   │   ├── toddler/     # Toddler calendar view
 │   │   │   ├── child/       # Child calendar view
@@ -84,7 +80,6 @@ prague-family-events/
 │   │   └── score-badge.tsx  # Score badge component
 │   ├── lib/
 │   │   ├── api.ts           # API client
-│   │   └── auth.ts          # NextAuth configuration
 │   └── prisma/
 │       └── schema.prisma    # Database schema
 │
@@ -108,7 +103,8 @@ prague-family-events/
 │   │   ├── utils/
 │   │   │   ├── distance.ts  # Distance calculations
 │   │   │   ├── dateParser.ts # Czech date parser
-│   │   │   └── priceParser.ts # Czech price parser
+│   │   │   ├── priceParser.ts # Czech price parser
+│   │   │   └── firecrawlHelper.ts # Firecrawl helper
 │   │   └── server.ts        # Express server
 │   └── prisma/
 │       └── schema.prisma    # Database schema
@@ -165,8 +161,6 @@ cp .env.example .env
 
 # Edit .env and set:
 DATABASE_URL="postgresql://..."  # Your database URL
-NEXTAUTH_SECRET="$(openssl rand -base64 32)"  # Generate secure secret
-NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_API_URL="http://localhost:3001/api"
 ```
 
@@ -229,23 +223,7 @@ npx prisma studio  # Opens database browser at localhost:5555
 
 ### Creating Users
 
-Since this is a private app for 2 users, you can create users directly in the database:
-
-```bash
-cd backend
-npx prisma studio
-
-# Or via SQL:
-psql prague_family_events
-
-INSERT INTO "User" (id, email, "passwordHash", name)
-VALUES (
-  'user1',
-  'husband@example.com',
-  '$2b$10$hashedPasswordHere',  -- Use bcrypt to hash
-  'Husband'
-);
-```
+*Authentication is not currently implemented in this application.*
 
 ### API Endpoints
 
@@ -458,11 +436,9 @@ const events = await prisma.event.findMany({
 ## Security & Privacy
 
 - ✅ **Private Deployment**: Add `noindex` meta tag, no public registration
-- ✅ **Authentication**: NextAuth.js with email/password (2 users only)
 - ✅ **HTTPS Only**: Enforce in production
 - ✅ **Environment Variables**: All secrets in .env files
 - ✅ **No Tracking**: No analytics or third-party tracking
-- ✅ **Password Hashing**: bcrypt with salt rounds
 - ⚠️ **TODO**: Add authentication middleware to scrape trigger endpoint
 - ⚠️ **TODO**: Implement rate limiting on API
 
