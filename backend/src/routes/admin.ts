@@ -25,7 +25,7 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
 
     console.log(`[Admin] Manual scrape triggered${source ? ` for ${source}` : ' for all sources'}`);
 
-    let scraperResults;
+    let scraperResults: any[] = [];
 
     if (source) {
       // Run specific scraper
@@ -37,87 +37,112 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
         });
       }
 
-      const result = await scraper.fn();
-      scraperResults = [result];
+      try {
+        const result = await scraper.fn();
+        scraperResults = [result];
+      } catch (error: any) {
+        console.error(`[Admin] Error running scraper ${source}:`, error);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to run scraper ${source}: ${error.message}`
+        });
+      }
     } else {
       // Run all scrapers
-      scraperResults = await runAllScrapers(1000); // 1 second delay between scrapers
+      try {
+        scraperResults = await runAllScrapers(1000); // 1 second delay between scrapers
+      } catch (error: any) {
+        console.error('[Admin] Error running all scrapers:', error);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to run scrapers: ${error.message}`
+        });
+      }
     }
 
     // Process and store events
-    const allEvents = getAllEvents(scraperResults);
-
-    // Deduplicate
-    const deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
-
-    // Score events (without geocoding for quick admin trigger)
-    const scoredEvents: ScoredEvent[] = deduplicatedEvents.map((event: RawEvent) =>
-      scoreEventForAllGroups(event, undefined)
-    );
-
-    // Store in database
+    let allEvents: RawEvent[] = [];
+    let deduplicatedEvents: RawEvent[] = [];
+    let scoredEvents: ScoredEvent[] = [];
     let storedCount = 0;
-    for (const event of scoredEvents) {
-      try {
-        await prisma.event.upsert({
-          where: { externalId: event.externalId },
-          update: {
-            source: event.source,
-            title: event.title,
-            description: event.description,
-            startDateTime: event.startDateTime,
-            endDateTime: event.endDateTime,
-            locationName: event.locationName,
-            address: event.address,
-            latitude: event.latitude,
-            longitude: event.longitude,
-            distanceFromPrague: event.distanceFromPrague,
-            category: event.category,
-            ageMin: event.ageMin,
-            ageMax: event.ageMax,
-            adultPrice: event.adultPrice,
-            childPrice: event.childPrice,
-            familyPrice: event.familyPrice,
-            isOutdoor: event.isOutdoor || false,
-            durationMinutes: event.durationMinutes,
-            imageUrl: event.imageUrl,
-            bookingUrl: event.bookingUrl,
-            scoreToddler: event.scoreToddler,
-            scoreChild: event.scoreChild,
-            scoreFamily: event.scoreFamily,
-            updatedAt: new Date(),
-          },
-          create: {
-            externalId: event.externalId,
-            source: event.source,
-            title: event.title,
-            description: event.description,
-            startDateTime: event.startDateTime,
-            endDateTime: event.endDateTime,
-            locationName: event.locationName,
-            address: event.address,
-            latitude: event.latitude,
-            longitude: event.longitude,
-            distanceFromPrague: event.distanceFromPrague,
-            category: event.category,
-            ageMin: event.ageMin,
-            ageMax: event.ageMax,
-            adultPrice: event.adultPrice,
-            childPrice: event.childPrice,
-            familyPrice: event.familyPrice,
-            isOutdoor: event.isOutdoor || false,
-            durationMinutes: event.durationMinutes,
-            imageUrl: event.imageUrl,
-            bookingUrl: event.bookingUrl,
-            scoreToddler: event.scoreToddler,
-            scoreChild: event.scoreChild,
-            scoreFamily: event.scoreFamily,
-          },
-        });
-        storedCount++;
-      } catch (error) {
-        console.error(`Error storing event: ${error}`);
+
+    try {
+      allEvents = getAllEvents(scraperResults);
+
+      // Deduplicate
+      deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
+
+      // Score events (without geocoding for quick admin trigger)
+      scoredEvents = deduplicatedEvents.map((event: RawEvent) =>
+        scoreEventForAllGroups(event, undefined)
+      );
+
+      // Store in database
+      for (const event of scoredEvents) {
+        try {
+          await prisma.event.upsert({
+            where: { externalId: event.externalId },
+            update: {
+              source: event.source,
+              title: event.title,
+              description: event.description,
+              startDateTime: event.startDateTime,
+              endDateTime: event.endDateTime,
+              locationName: event.locationName,
+              address: event.address,
+              latitude: event.latitude,
+              longitude: event.longitude,
+              distanceFromPrague: event.distanceFromPrague,
+              category: event.category,
+              ageMin: event.ageMin,
+              ageMax: event.ageMax,
+              adultPrice: event.adultPrice,
+              childPrice: event.childPrice,
+              familyPrice: event.familyPrice,
+              isOutdoor: event.isOutdoor || false,
+              durationMinutes: event.durationMinutes,
+              imageUrl: event.imageUrl,
+              bookingUrl: event.bookingUrl,
+              scoreToddler: event.scoreToddler,
+              scoreChild: event.scoreChild,
+              scoreFamily: event.scoreFamily,
+              updatedAt: new Date(),
+            },
+            create: {
+              externalId: event.externalId,
+              source: event.source,
+              title: event.title,
+              description: event.description,
+              startDateTime: event.startDateTime,
+              endDateTime: event.endDateTime,
+              locationName: event.locationName,
+              address: event.address,
+              latitude: event.latitude,
+              longitude: event.longitude,
+              distanceFromPrague: event.distanceFromPrague,
+              category: event.category,
+              ageMin: event.ageMin,
+              ageMax: event.ageMax,
+              adultPrice: event.adultPrice,
+              childPrice: event.childPrice,
+              familyPrice: event.familyPrice,
+              isOutdoor: event.isOutdoor || false,
+              durationMinutes: event.durationMinutes,
+              imageUrl: event.imageUrl,
+              bookingUrl: event.bookingUrl,
+              scoreToddler: event.scoreToddler,
+              scoreChild: event.scoreChild,
+              scoreFamily: event.scoreFamily,
+            },
+          });
+          storedCount++;
+        } catch (error: any) {
+          console.error(`Error storing event ${event.externalId}:`, error.message);
+        }
       }
+    } catch (error: any) {
+      console.error('[Admin] Error processing events:', error);
+      // Still return partial results if we got some events
     }
 
     // Calculate summary
@@ -186,10 +211,24 @@ router.get('/scrape/health', async (req: Request, res: Response) => {
       _count: true
     });
 
+    // Identify placeholder scrapers
+    const placeholderScrapers = ['prahahrave.cz', 'aktivnidite.cz'];
+
     // Calculate scraper health status
     const scraperHealth = SCRAPERS.map(scraper => {
       const totalEvents = eventsBySource.find(e => e.source === scraper.name)?._count || 0;
       const recentEvents = recentEventsBySource.find(e => e.source === scraper.name)?._count || 0;
+
+      // Placeholder scrapers are not implemented yet
+      if (placeholderScrapers.includes(scraper.name)) {
+        return {
+          source: scraper.name,
+          status: 'not_implemented' as const,
+          totalEvents: 0,
+          recentEvents: 0,
+          lastActive: null
+        };
+      }
 
       let status: 'healthy' | 'warning' | 'error' = 'healthy';
       if (totalEvents === 0) {
@@ -211,9 +250,9 @@ router.get('/scrape/health', async (req: Request, res: Response) => {
       success: true,
       lastScrape: lastScrapeLog?.createdAt || null,
       totalScrapers: SCRAPERS.length,
-      healthyScraper: scraperHealth.filter(s => s.status === 'healthy').length,
-      warningScraper: scraperHealth.filter(s => s.status === 'warning').length,
-      errorScraper: scraperHealth.filter(s => s.status === 'error').length,
+      healthyScrapers: scraperHealth.filter(s => s.status === 'healthy').length,
+      warningScrapers: scraperHealth.filter(s => s.status === 'warning').length,
+      errorScrapers: scraperHealth.filter(s => s.status === 'error').length,
       scrapers: scraperHealth
     });
 
