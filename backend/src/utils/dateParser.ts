@@ -82,11 +82,12 @@ export function parseCzechDate(dateStr: string): Date | null {
       // Try current year first - set to 10 AM as default time for family events
       let date = new Date(currentYear, month - 1, day, 10, 0, 0, 0);
 
-      // If date is in the past (more than 1 day ago), use next year
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      // If date is in the past (more than 3 months ago), use next year.
+      // This is a more conservative assumption to avoid scheduling events for the wrong year.
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-      if (date < oneDayAgo) {
+      if (date < threeMonthsAgo) {
         date = new Date(currentYear + 1, month - 1, day, 10, 0, 0, 0);
       }
 
