@@ -64,8 +64,8 @@ Check the output for:
 | 1 | goout.net | ✅ **WORKING** | Cheerio | Selector: `.event`, location in 2nd `<a>` tag |
 | 2 | vylety-zabava.cz | ✅ **WORKING** | Cheerio | Selector: `article.item`, data in `ul.uvod` |
 | 3 | kudyznudy.cz | 🔥 **READY** | Firecrawl | Dynamic content - requires API key |
-| 4 | overenorodici.cz | ❌ Not Implemented | Puppeteer | Needs investigation |
-| 5 | praguest.com | ❌ Not Implemented | Puppeteer | Needs investigation |
+| 4 | overenorodici.cz | 🔥 **READY** | Firecrawl | Template created - requires API key |
+| 5 | praguest.com | ❌ Skip | - | 404 error - URL needs fixing |
 | 6 | ententyky.cz | 🔄 Template needed | Firecrawl | Needs scraper implementation |
 | 7 | slevomat.cz | 🔄 Template needed | Firecrawl | Needs scraper implementation |
 | 8 | skvelecesko.cz | 🔄 Template needed | Firecrawl | Needs scraper implementation |
