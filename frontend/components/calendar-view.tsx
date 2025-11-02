@@ -9,6 +9,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer, View, Event as BigCalendarEvent } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import { formatDate, formatTime } from '@/lib/dateUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -253,26 +254,14 @@ export function CalendarView({ events, view, onEventClick }: CalendarViewProps) 
               <div className="flex items-center gap-2 text-sm">
                 <CalendarIcon className="w-4 h-4" />
                 <span>
-                  {format(
-                    typeof selectedEvent.startDateTime === 'string'
-                      ? new Date(selectedEvent.startDateTime)
-                      : selectedEvent.startDateTime,
-                    'EEEE, d. MMMM yyyy',
-                    { locale: cs }
-                  )}
+                  {formatDate(selectedEvent.startDateTime)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="w-4 h-4" />
                 <span>
-                  {format(
-                    typeof selectedEvent.startDateTime === 'string'
-                      ? new Date(selectedEvent.startDateTime)
-                      : selectedEvent.startDateTime,
-                    'HH:mm',
-                    { locale: cs }
-                  )}
+                  {formatTime(selectedEvent.startDateTime)}
                 </span>
               </div>
 

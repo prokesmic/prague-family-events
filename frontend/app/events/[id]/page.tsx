@@ -11,8 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { eventAPI } from '@/lib/api';
 import { ArrowLeft, MapPin, Clock, Euro, Calendar, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { cs } from 'date-fns/locale';
+import { formatDate, formatTime } from '@/lib/dateUtils';
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [event, setEvent] = useState<any>(null);
@@ -71,7 +70,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const startDate = new Date(event.startDateTime);
+  const startDate = event.startDateTime;
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -134,7 +133,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <p className="font-semibold">Date</p>
                 <p className="text-muted-foreground">
-                  {format(startDate, 'EEEE, d. MMMM yyyy', { locale: cs })}
+                  {formatDate(startDate)}
                 </p>
               </div>
             </div>
@@ -144,7 +143,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <p className="font-semibold">Time</p>
                 <p className="text-muted-foreground">
-                  {format(startDate, 'HH:mm')}
+                  {formatTime(startDate)}
                   {event.durationMinutes && ` (${event.durationMinutes} min)`}
                 </p>
               </div>
