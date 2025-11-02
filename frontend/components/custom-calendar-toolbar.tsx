@@ -3,19 +3,18 @@
  * Replaces the default toolbar to allow for custom styling and formatting
  */
 
-import { ToolbarProps, View } from 'react-big-calendar';
+import { ToolbarProps, View, Event } from 'react-big-calendar';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export function CustomCalendarToolbar({
+export function CustomCalendarToolbar<TEvent extends Event>({
   date,
   view,
   onNavigate,
   onView,
-}: ToolbarProps) {
-  console.log('CustomCalendarToolbar rendered'); // Debugging line
+}: ToolbarProps<TEvent>) {
   return (
     <div className="flex items-center justify-between p-2">
       <div className="flex items-center gap-2">
