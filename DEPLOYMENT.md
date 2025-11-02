@@ -76,8 +76,9 @@ OPENWEATHER_API_KEY=(optional)
 1. In Railway, go to your backend service
 2. Open the **Deploy** tab
 3. Once deployed, open a shell
-4. Run: `npx prisma migrate deploy`
-5. Run: `npx prisma db seed` (optional - to add initial data)
+4. Run: `npx prisma generate`
+5. Run: `npx prisma migrate deploy`
+6. Run: `npx prisma db seed` (optional - to add initial data)
 
 ### 2.6 Get Backend URL
 
