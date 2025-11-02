@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { MapPin, Clock, Euro, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CustomCalendarToolbar } from './custom-calendar-toolbar';
 
 // Setup date-fns localizer for Czech locale
 const locales = {
@@ -84,6 +85,7 @@ function getScoreBadge(score: number): { color: string; label: string; bgColor: 
 export function CalendarView({ events, view, onEventClick }: CalendarViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [calendarView, setCalendarView] = useState<View>('month');
+  const [date, setDate] = useState(new Date());
 
   // Convert events to calendar format
   const calendarEvents: CalendarEvent[] = useMemo(() => {
@@ -176,7 +178,12 @@ export function CalendarView({ events, view, onEventClick }: CalendarViewProps) 
           onSelectEvent={handleSelectEvent}
           view={calendarView}
           onView={setCalendarView}
+          date={date}
+          onNavigate={setDate}
           culture="cs"
+          components={{
+            toolbar: CustomCalendarToolbar,
+          }}
           messages={{
             next: 'Další',
             previous: 'Předchozí',
