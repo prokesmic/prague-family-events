@@ -84,6 +84,7 @@ function getScoreBadge(score: number): { color: string; label: string; bgColor: 
 export function CalendarView({ events, view, onEventClick }: CalendarViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [calendarView, setCalendarView] = useState<View>('month');
+  const [date, setDate] = useState(new Date());
 
   // Convert events to calendar format
   const calendarEvents: CalendarEvent[] = useMemo(() => {
@@ -176,6 +177,8 @@ export function CalendarView({ events, view, onEventClick }: CalendarViewProps) 
           onSelectEvent={handleSelectEvent}
           view={calendarView}
           onView={setCalendarView}
+          date={date}
+          onNavigate={setDate}
           culture="cs"
           messages={{
             next: 'Další',
