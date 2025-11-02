@@ -6,6 +6,7 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { SCRAPERS, runAllScrapers, getAllEvents } from '../scrapers';
+import { isFirecrawlAvailable } from '../utils/firecrawlHelper';
 import { deduplicateEvents } from '../services/deduplication';
 import { scoreEventForAllGroups } from '../services/scoring';
 import { RawEvent, ScoredEvent } from '../types';
@@ -34,6 +35,16 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
         return res.status(400).json({
           success: false,
           error: `Unknown source: ${source}. Available sources: ${SCRAPERS.map(s => s.name).join(', ')}`
+        });
+      }
+
+      // Check for Firecrawl dependency
+      // Note: This is a simple check based on common knowledge of scrapers
+      const firecrawlDependent = ['kudyznudy.cz', 'overenorodici.cz', 'praguest.com', 'ententyky.cz', 'slevomat.cz', 'skvelecesko.cz'];
+      if (firecrawlDependent.includes(source as string) && !isFirecrawlAvailable()) {
+        return res.status(400).json({
+          success: false,
+          error: `Scraper for ${source} requires a Firecrawl API key. Please set FIRECRAWL_API_KEY.`
         });
       }
 
