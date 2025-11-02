@@ -25,6 +25,15 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
 
     console.log(`[Admin] Manual scrape triggered${source ? ` for ${source}` : ' for all sources'}`);
 
+    // Validate scrapers are available
+    if (!SCRAPERS || SCRAPERS.length === 0) {
+      console.error('[Admin] No scrapers available');
+      return res.status(500).json({
+        success: false,
+        error: 'No scrapers configured'
+      });
+    }
+
     let scraperResults: any[] = [];
 
     if (source) {
@@ -67,19 +76,58 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
     let storedCount = 0;
 
     try {
+      console.log(`[Admin] Processing ${scraperResults.length} scraper results`);
+      
       allEvents = getAllEvents(scraperResults);
+      console.log(`[Admin] Found ${allEvents.length} total events`);
 
       // Deduplicate
+      console.log('[Admin] Deduplicating events...');
       deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
+      console.log(`[Admin] After deduplication: ${deduplicatedEvents.length} events`);
 
       // Score events (without geocoding for quick admin trigger)
-      scoredEvents = deduplicatedEvents.map((event: RawEvent) =>
-        scoreEventForAllGroups(event, undefined)
-      );
+      // Convert RawEvent to GeocodedEvent (geocoding fields can be undefined)
+      console.log('[Admin] Scoring events...');
+      scoredEvents = deduplicatedEvents.map((event: RawEvent) => {
+        try {
+          const geocodedEvent: any = {
+            ...event,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            distanceFromPrague: event.distanceFromPrague,
+          };
+          return scoreEventForAllGroups(geocodedEvent, undefined);
+        } catch (scoreError: any) {
+          console.error(`[Admin] Error scoring event ${event.externalId}:`, scoreError);
+          // Return a default scored event if scoring fails
+          return {
+            ...event,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            distanceFromPrague: event.distanceFromPrague,
+            scoreToddler: 50,
+            scoreChild: 50,
+            scoreFamily: 50,
+          };
+        }
+      });
+      console.log(`[Admin] Scored ${scoredEvents.length} events`);
 
       // Store in database
+      console.log('[Admin] Storing events in database...');
       for (const event of scoredEvents) {
         try {
+          if (!event.externalId || !event.source || !event.title || !event.startDateTime) {
+            console.warn(`[Admin] Skipping invalid event:`, { 
+              externalId: event.externalId, 
+              source: event.source, 
+              hasTitle: !!event.title,
+              hasStartDateTime: !!event.startDateTime
+            });
+            continue;
+          }
+
           await prisma.event.upsert({
             where: { externalId: event.externalId },
             update: {
@@ -168,9 +216,20 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
 
   } catch (error: any) {
     console.error('[Admin] Scrape trigger error:', error);
+    console.error('[Admin] Error stack:', error?.stack);
+    console.error('[Admin] Error details:', JSON.stringify(error, null, 2));
+    
+    // Provide detailed error information
+    const errorMessage = error?.message || 'Unknown error occurred';
+    const errorDetails = process.env.NODE_ENV === 'production' 
+      ? 'Check server logs for details' 
+      : error?.stack || errorMessage;
+
     res.status(500).json({
       success: false,
-      error: error.message
+      error: `Failed to trigger scrape: ${errorMessage}`,
+      details: errorDetails,
+      timestamp: new Date().toISOString()
     });
   }
 });
