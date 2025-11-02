@@ -11,9 +11,6 @@ export interface RawEvent {
   endDateTime?: Date;
   locationName?: string;
   address?: string;
-  latitude?: number;
-  longitude?: number;
-  distanceFromPrague?: number;
   category?: string;
   ageMin?: number;
   ageMax?: number;

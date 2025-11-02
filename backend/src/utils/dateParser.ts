@@ -82,14 +82,11 @@ export function parseCzechDate(dateStr: string): Date | null {
       // Try current year first - set to 10 AM as default time for family events
       let date = new Date(currentYear, month - 1, day, 10, 0, 0, 0);
 
-      // Compare dates at start of day (ignoring time) to avoid time-of-day comparison issues
-      // If the date (without time) is more than 7 days in the past, use next year
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      const dateWithoutTime = new Date(currentYear, month - 1, day, 0, 0, 0, 0);
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // If date is in the past (more than 1 day ago), use next year
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-      if (dateWithoutTime < sevenDaysAgo) {
+      if (date < oneDayAgo) {
         date = new Date(currentYear + 1, month - 1, day, 10, 0, 0, 0);
       }
 
