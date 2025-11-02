@@ -5,8 +5,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { cs } from 'date-fns/locale';
+import { formatDate, formatTime } from '@/lib/dateUtils';
 import { MapPin, Clock, Euro, Calendar } from 'lucide-react';
 
 interface Event {
@@ -140,13 +139,13 @@ export function EventCard({ event, view, onClick }: EventCardProps) {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="w-4 h-4" />
             <span>
-              {format(startDate, 'EEEE, d. MMMM yyyy', { locale: cs })}
+              {formatDate(startDate)}
             </span>
           </div>
 
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
-            <span>{format(startDate, 'HH:mm', { locale: cs })}</span>
+            <span>{formatTime(startDate)}</span>
           </div>
 
           {/* Location */}
