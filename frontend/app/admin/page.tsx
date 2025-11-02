@@ -25,7 +25,7 @@ import Link from 'next/link';
 
 interface ScraperHealth {
   source: string;
-  status: 'healthy' | 'warning' | 'error' | 'not_implemented';
+  status: 'healthy' | 'warning' | 'error';
   totalEvents: number;
   recentEvents: number;
   lastActive: string | null;
@@ -96,8 +96,6 @@ export default function AdminPage() {
         return <AlertCircle className="w-5 h-5 text-yellow-600" />;
       case 'error':
         return <XCircle className="w-5 h-5 text-red-600" />;
-      case 'not_implemented':
-        return <Clock className="w-5 h-5 text-gray-500" />;
       default:
         return <Activity className="w-5 h-5 text-gray-400" />;
     }
@@ -111,8 +109,6 @@ export default function AdminPage() {
         return 'bg-yellow-100 text-yellow-800';
       case 'error':
         return 'bg-red-100 text-red-800';
-      case 'not_implemented':
-        return 'bg-gray-100 text-gray-600';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -171,7 +167,7 @@ export default function AdminPage() {
             <div>
               <p className="text-sm text-muted-foreground">Healthy</p>
               <p className="text-2xl font-bold text-green-600">
-                {healthData?.healthyScrapers || 0}
+                {healthData?.healthyScraper || 0}
               </p>
             </div>
           </div>
@@ -182,7 +178,7 @@ export default function AdminPage() {
             <div>
               <p className="text-sm text-muted-foreground">Warnings</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {healthData?.warningScrapers || 0}
+                {healthData?.warningScraper || 0}
               </p>
             </div>
           </div>
@@ -193,7 +189,7 @@ export default function AdminPage() {
             <div>
               <p className="text-sm text-muted-foreground">Errors</p>
               <p className="text-2xl font-bold text-red-600">
-                {healthData?.errorScrapers || 0}
+                {healthData?.errorScraper || 0}
               </p>
             </div>
           </div>
@@ -232,29 +228,12 @@ export default function AdminPage() {
             <p className="font-semibold mb-2">
               {scrapeResult.success ? 'Scrape Completed' : 'Scrape Failed'}
             </p>
-            {scrapeResult.error && (
-              <p className="text-sm text-red-700 mb-2">{scrapeResult.error}</p>
-            )}
             {scrapeResult.summary && (
               <div className="text-sm space-y-1">
                 <p>Events Found: {scrapeResult.summary.eventsFound}</p>
                 <p>Events Stored: {scrapeResult.summary.eventsStored}</p>
                 <p>Errors: {scrapeResult.summary.errors}</p>
-                {scrapeResult.summary.sources && scrapeResult.summary.sources.length > 0 && (
-                  <p>Execution Time: {(scrapeResult.summary.sources[0]?.executionTime / 1000 || 0).toFixed(1)}s</p>
-                )}
-                {scrapeResult.summary.sources && scrapeResult.summary.sources.length > 1 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-blue-600">View per-source details</summary>
-                    <div className="mt-2 space-y-1">
-                      {scrapeResult.summary.sources.map((source: any, idx: number) => (
-                        <p key={idx} className="text-xs">
-                          {source.source}: {source.events} events, {source.errors} errors
-                        </p>
-                      ))}
-                    </div>
-                  </details>
-                )}
+                <p>Execution Time: {(scrapeResult.summary.sources[0]?.executionTime / 1000).toFixed(1)}s</p>
               </div>
             )}
           </div>
@@ -293,10 +272,9 @@ export default function AdminPage() {
               </div>
               <Button
                 onClick={() => handleTriggerScrape(scraper.source)}
-                disabled={scraping !== null || scraper.status === 'not_implemented'}
+                disabled={scraping !== null}
                 size="sm"
                 variant="outline"
-                title={scraper.status === 'not_implemented' ? 'Scraper not yet implemented' : 'Run scraper'}
               >
                 {scraping === scraper.source ? (
                   <RefreshCcw className="w-4 h-4 animate-spin" />
