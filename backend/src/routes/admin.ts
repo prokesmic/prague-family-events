@@ -51,122 +51,124 @@ router.post('/scrape/trigger', async (req: Request, res: Response) => {
     console.log(`[Admin] Manual scrape triggered${source ? ` for ${source}` : ' for all sources'}`);
     console.log(`[Admin] Environment: NODE_ENV=${process.env.NODE_ENV}, hasFirecrawl=${!!process.env.FIRECRAWL_API_KEY}`);
 
-    let scraperResults;
-
-    if (source) {
-      // Run specific scraper
-      const scraper = SCRAPERS.find(s => s.name === source);
-      if (!scraper) {
-        return res.status(400).json({
-          success: false,
-          error: `Unknown source: ${source}. Available sources: ${SCRAPERS.map(s => s.name).join(', ')}`
-        });
-      }
-
-      console.log(`[Admin] Running scraper: ${scraper.name}`);
-      const result = await scraper.fn();
-      scraperResults = [result];
-    } else {
-      // Run all scrapers
-      console.log(`[Admin] Running all ${SCRAPERS.length} scrapers`);
-      scraperResults = await runAllScrapers(1000); // 1 second delay between scrapers
-    }
-
-    // Process and store events
-    const allEvents = getAllEvents(scraperResults);
-
-    // Deduplicate
-    const deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
-
-    // Score events (without geocoding for quick admin trigger)
-    const scoredEvents: ScoredEvent[] = deduplicatedEvents.map((event: RawEvent) =>
-      scoreEventForAllGroups(event, undefined)
-    );
-
-    // Store in database
-    let storedCount = 0;
-    for (const event of scoredEvents) {
+    // Run scraping in background to avoid timeout
+    const scrapePromise = (async () => {
       try {
-        await prisma.event.upsert({
-          where: { externalId: event.externalId },
-          update: {
-            source: event.source,
-            title: event.title,
-            description: event.description,
-            startDateTime: event.startDateTime,
-            endDateTime: event.endDateTime,
-            locationName: event.locationName,
-            address: event.address,
-            latitude: event.latitude,
-            longitude: event.longitude,
-            distanceFromPrague: event.distanceFromPrague,
-            category: event.category,
-            ageMin: event.ageMin,
-            ageMax: event.ageMax,
-            adultPrice: event.adultPrice,
-            childPrice: event.childPrice,
-            familyPrice: event.familyPrice,
-            isOutdoor: event.isOutdoor || false,
-            durationMinutes: event.durationMinutes,
-            imageUrl: event.imageUrl,
-            bookingUrl: event.bookingUrl,
-            scoreToddler: event.scoreToddler,
-            scoreChild: event.scoreChild,
-            scoreFamily: event.scoreFamily,
-            updatedAt: new Date(),
-          },
-          create: {
-            externalId: event.externalId,
-            source: event.source,
-            title: event.title,
-            description: event.description,
-            startDateTime: event.startDateTime,
-            endDateTime: event.endDateTime,
-            locationName: event.locationName,
-            address: event.address,
-            latitude: event.latitude,
-            longitude: event.longitude,
-            distanceFromPrague: event.distanceFromPrague,
-            category: event.category,
-            ageMin: event.ageMin,
-            ageMax: event.ageMax,
-            adultPrice: event.adultPrice,
-            childPrice: event.childPrice,
-            familyPrice: event.familyPrice,
-            isOutdoor: event.isOutdoor || false,
-            durationMinutes: event.durationMinutes,
-            imageUrl: event.imageUrl,
-            bookingUrl: event.bookingUrl,
-            scoreToddler: event.scoreToddler,
-            scoreChild: event.scoreChild,
-            scoreFamily: event.scoreFamily,
-          },
-        });
-        storedCount++;
+        let scraperResults;
+
+        if (source) {
+          // Run specific scraper
+          const scraper = SCRAPERS.find(s => s.name === source);
+          if (!scraper) {
+            console.error(`[Admin] Unknown source: ${source}`);
+            return;
+          }
+
+          console.log(`[Admin] Running scraper: ${scraper.name}`);
+          const result = await scraper.fn();
+          scraperResults = [result];
+        } else {
+          // Run all scrapers
+          console.log(`[Admin] Running all ${SCRAPERS.length} scrapers`);
+          scraperResults = await runAllScrapers(1000); // 1 second delay between scrapers
+        }
+
+        // Process and store events
+        const allEvents = getAllEvents(scraperResults);
+
+        // Deduplicate
+        const deduplicatedEvents = deduplicateEvents(allEvents, 0.8);
+
+        // Score events (without geocoding for quick admin trigger)
+        const scoredEvents: ScoredEvent[] = deduplicatedEvents.map((event: RawEvent) =>
+          scoreEventForAllGroups(event, undefined)
+        );
+
+        // Store in database
+        let storedCount = 0;
+        for (const event of scoredEvents) {
+          try {
+            await prisma.event.upsert({
+              where: { externalId: event.externalId },
+              update: {
+                source: event.source,
+                title: event.title,
+                description: event.description,
+                startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
+                locationName: event.locationName,
+                address: event.address,
+                latitude: event.latitude,
+                longitude: event.longitude,
+                distanceFromPrague: event.distanceFromPrague,
+                category: event.category,
+                ageMin: event.ageMin,
+                ageMax: event.ageMax,
+                adultPrice: event.adultPrice,
+                childPrice: event.childPrice,
+                familyPrice: event.familyPrice,
+                isOutdoor: event.isOutdoor || false,
+                durationMinutes: event.durationMinutes,
+                imageUrl: event.imageUrl,
+                bookingUrl: event.bookingUrl,
+                scoreToddler: event.scoreToddler,
+                scoreChild: event.scoreChild,
+                scoreFamily: event.scoreFamily,
+                updatedAt: new Date(),
+              },
+              create: {
+                externalId: event.externalId,
+                source: event.source,
+                title: event.title,
+                description: event.description,
+                startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
+                locationName: event.locationName,
+                address: event.address,
+                latitude: event.latitude,
+                longitude: event.longitude,
+                distanceFromPrague: event.distanceFromPrague,
+                category: event.category,
+                ageMin: event.ageMin,
+                ageMax: event.ageMax,
+                adultPrice: event.adultPrice,
+                childPrice: event.childPrice,
+                familyPrice: event.familyPrice,
+                isOutdoor: event.isOutdoor || false,
+                durationMinutes: event.durationMinutes,
+                imageUrl: event.imageUrl,
+                bookingUrl: event.bookingUrl,
+                scoreToddler: event.scoreToddler,
+                scoreChild: event.scoreChild,
+                scoreFamily: event.scoreFamily,
+              },
+            });
+            storedCount++;
+          } catch (error) {
+            console.error(`[Admin] Error storing event: ${error}`);
+          }
+        }
+
+        // Calculate summary
+        const totalEvents = scraperResults.reduce((sum, r) => sum + r.events.length, 0);
+        const totalErrors = scraperResults.reduce((sum, r) => sum + r.errors.length, 0);
+
+        console.log(`[Admin] Scrape completed: ${totalEvents} events found, ${storedCount} stored`);
       } catch (error) {
-        console.error(`Error storing event: ${error}`);
+        console.error('[Admin] Background scrape error:', error);
       }
-    }
+    })();
 
-    // Calculate summary
-    const totalEvents = scraperResults.reduce((sum, r) => sum + r.events.length, 0);
-    const totalErrors = scraperResults.reduce((sum, r) => sum + r.errors.length, 0);
+    // Don't await - return immediately
+    scrapePromise.catch(err => console.error('[Admin] Scrape promise error:', err));
 
+    // Return success immediately
     res.json({
       success: true,
-      message: 'Scrape completed successfully',
-      summary: {
-        sourcesScraped: scraperResults.length,
-        eventsFound: totalEvents,
-        eventsStored: storedCount,
-        errors: totalErrors,
-        sources: scraperResults.map(r => ({
-          source: r.source,
-          events: r.events.length,
-          errors: r.errors.length,
-          executionTime: r.executionTime
-        }))
-      }
+      message: source
+        ? `Scraping ${source} started in background`
+        : 'Scraping all sources started in background',
+      note: 'Check scraper health endpoint for progress'
     });
 
   } catch (error: any) {
