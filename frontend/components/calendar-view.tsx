@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { MapPin, Clock, Euro, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CustomCalendarToolbar } from './custom-calendar-toolbar';
 
 // Setup date-fns localizer for Czech locale
 const locales = {
@@ -180,6 +181,9 @@ export function CalendarView({ events, view, onEventClick }: CalendarViewProps) 
           date={date}
           onNavigate={setDate}
           culture="cs"
+          components={{
+            toolbar: CustomCalendarToolbar,
+          }}
           messages={{
             next: 'Další',
             previous: 'Předchozí',
