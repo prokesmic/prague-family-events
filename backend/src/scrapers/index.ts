@@ -13,32 +13,23 @@ import { scrapeSlevomat } from './slevomat';
 import { scrapeSkvelecesko } from './skvelecesko';
 import { RawEvent, ScraperResult } from '../types';
 
-// Placeholder scrapers for remaining sources
-async function scrapePlaceholder(sourceName: string): Promise<ScraperResult> {
-  console.log(`[${sourceName}] Placeholder - not yet implemented`);
-  return {
-    source: sourceName,
-    events: [],
-    errors: [`${sourceName} scraper not yet implemented`],
-    executionTime: 0,
-  };
-}
-
 /**
  * List of all scrapers with their functions
+ * Note: Some scrapers are excluded as they don't provide time-bound family events:
+ * - overenorodici.cz: Provides place recommendations (not time-bound events)
+ * - skvelecesko.cz: Low event coverage for Prague family activities
+ * - vylety-zabava.cz: Contains outdated long-term events
  */
 export const SCRAPERS = [
   { name: 'goout.net', fn: scrapeGoOut },
   { name: 'vylety-zabava.cz', fn: scrapeVyletyZabava },
   { name: 'kdykde.cz', fn: scrapeKdykde }, // Static HTML - no Firecrawl needed
   { name: 'kudyznudy.cz', fn: scrapeKudyZnudy }, // Requires Firecrawl
-  { name: 'overenorodici.cz', fn: scrapeOverenoRodici }, // Requires Firecrawl
+  { name: 'overenorodici.cz', fn: scrapeOverenoRodici }, // Requires Firecrawl - place recommendations
   { name: 'praguest.com', fn: scrapePraguest }, // Requires Firecrawl
   { name: 'ententyky.cz', fn: scrapeEntentyky }, // Requires Firecrawl
   { name: 'slevomat.cz', fn: scrapeSlevomat }, // Requires Firecrawl - deals for kids
   { name: 'skvelecesko.cz', fn: scrapeSkvelecesko }, // Requires Firecrawl
-  { name: 'prahahrave.cz', fn: () => scrapePlaceholder('prahahrave.cz') },
-  { name: 'aktivnidite.cz', fn: () => scrapePlaceholder('aktivnidite.cz') },
 ];
 
 /**
