@@ -79,8 +79,9 @@ export function parseCzechDate(dateStr: string): Date | null {
       const now = new Date();
       const currentYear = now.getFullYear();
 
-      // Try current year first - set to 10 AM as default time for family events
-      let date = new Date(currentYear, month - 1, day, 10, 0, 0, 0);
+      // Try current year first - set to 10 AM Prague time as default time for family events
+      // Use UTC to avoid timezone issues (Prague is UTC+1/UTC+2)
+      let date = new Date(Date.UTC(currentYear, month - 1, day, 9, 0, 0, 0)); // 9 AM UTC = 10 AM Prague (winter)
 
       // Only bump to next year if date is more than 2 months in the past
       // This prevents recent past dates (like yesterday) from jumping to next year
@@ -88,7 +89,7 @@ export function parseCzechDate(dateStr: string): Date | null {
       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
 
       if (date < twoMonthsAgo) {
-        date = new Date(currentYear + 1, month - 1, day, 10, 0, 0, 0);
+        date = new Date(Date.UTC(currentYear + 1, month - 1, day, 9, 0, 0, 0));
       }
 
       if (isValid(date)) {
@@ -106,8 +107,9 @@ export function parseCzechDate(dateStr: string): Date | null {
     const month = CZECH_MONTHS[monthName];
 
     if (month && day >= 1 && day <= 31) {
-      // Set to 10 AM as default time for family events
-      const date = new Date(year, month - 1, day, 10, 0, 0, 0);
+      // Set to 10 AM Prague time as default time for family events
+      // Use UTC to avoid timezone issues (Prague is UTC+1/UTC+2)
+      const date = new Date(Date.UTC(year, month - 1, day, 9, 0, 0, 0)); // 9 AM UTC = 10 AM Prague (winter)
       if (isValid(date)) {
         return date;
       }
