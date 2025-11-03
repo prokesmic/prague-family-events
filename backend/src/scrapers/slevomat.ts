@@ -225,6 +225,11 @@ export async function scrapeSlevomat(): Promise<ScraperResult> {
           lowerText.includes('zahrada') ||
           lowerText.includes('příroda');
 
+        // Slevomat returns prices in halers (100 halers = 1 CZK), so divide by 100
+        const adultPriceInCzk = (prices.adultPrice || price) ? Math.round((prices.adultPrice || price || 0) / 100) : undefined;
+        const childPriceInCzk = prices.childPrice ? Math.round(prices.childPrice / 100) : undefined;
+        const familyPriceInCzk = prices.familyPrice ? Math.round(prices.familyPrice / 100) : undefined;
+
         // Create event object
         const event: RawEvent = {
           externalId: `${SOURCE_NAME}-${createHash(title + location)}`,
@@ -237,9 +242,9 @@ export async function scrapeSlevomat(): Promise<ScraperResult> {
           category,
           ageMin: ageRange.ageMin,
           ageMax: ageRange.ageMax,
-          adultPrice: prices.adultPrice || price || undefined,
-          childPrice: prices.childPrice,
-          familyPrice: prices.familyPrice,
+          adultPrice: adultPriceInCzk,
+          childPrice: childPriceInCzk,
+          familyPrice: familyPriceInCzk,
           isOutdoor,
           durationMinutes: extractDuration(fullText) || undefined,
           imageUrl: imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `https://www.slevomat.cz${imageUrl}`) : undefined,
